@@ -155,7 +155,7 @@ class GameController:
                     self._running = queue.get()
                 if self._running == 1:
                     catch_img = ImageGrab.grab(self.form_team_intf)
-                    if self.hamming(self.get_hash(catch_img), self.form_team_hash, 10):
+                    if self.hamming(self.get_hash(catch_img), self.form_team_hash, 30):
                         break
                     time.sleep(0.5)
                 elif self._running == 0:
