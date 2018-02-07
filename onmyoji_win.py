@@ -69,12 +69,12 @@ class GameController:
                             round(self.ltrb[1] + self.scaling_high * 0.18))
         self.single_hash = '000000000000000000186e1836387ebc7ebc7eb86ed897fc0000ffffffffffff'
         # 组队界面判定采样坐标#
-        self.form_team_intf = (round(self.ltrb[0] + self.scaling_width * 0.125),
-                               round(self.ltrb[1] + self.scaling_high * 0.13),
-                               round(self.ltrb[0] + self.scaling_width * 0.225),
-                               round(self.ltrb[1] + self.scaling_high * 0.22))
+        self.form_team_intf = (round(self.ltrb[0] + self.scaling_width * 0.12),
+                               round(self.ltrb[1] + self.scaling_high * 0.8),
+                               round(self.ltrb[0] + self.scaling_width * 0.24),
+                               round(self.ltrb[1] + self.scaling_high * 0.88))
         # 组队界面判定hash
-        self.form_team_hash = 'ffffffff0000ffffffdf91889180908080809288ffeeffff0000ffffffffffff'
+        self.form_team_hash = '7ffeffffffffffffcd33cd33c823c923cd93c901e577ffffffff7ffe00000000'
         # 组队栏位1采样坐标
         self.form_team1 = (round(self.ltrb[0] + self.scaling_width * 0.2),
                            round(self.ltrb[1] + self.scaling_high * 0.4),
@@ -149,6 +149,17 @@ class GameController:
             self.click_left_cur()
             return
         elif mode == '司机':
+            # 检测是否进入组队界面
+            while True:
+                if not queue.empty():
+                    self._running = queue.get()
+                if self._running == 1:
+                    catch_img = ImageGrab.grab(self.form_team_intf)
+                    if self.hamming(self.get_hash(catch_img), self.form_team_hash, 10):
+                        break
+                    time.sleep(0.5)
+                elif self._running == 0:
+                    return
             # 检测队伍人数，符合预期再点开始战斗
             while True:
                 if not queue.empty():
@@ -157,7 +168,7 @@ class GameController:
                     num = 0
                     for i in [self.form_team1, self.form_team2, self.form_team3]:
                         catch_img = ImageGrab.grab(i)
-                        self.get_hash(catch_img)
+                        # self.get_hash(catch_img)
                         if not self.hamming(self.get_hash(catch_img), self.form_team_blank_hash, 10):
                             num = num + 1
                     if num == fight_num:

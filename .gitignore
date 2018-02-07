@@ -101,4 +101,11 @@ ENV/
 .mypy_cache/
 
 # idea
-.idea
+.idea/
+/.idea/
+/mysetting.db.dat
+/mysetting.db.dir
+/mysetting.db.bak
+mysetting.db.bak
+mysetting.db.dat
+mysetting.db.dir
