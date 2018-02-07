@@ -109,3 +109,7 @@ ENV/
 mysetting.db.bak
 mysetting.db.dat
 mysetting.db.dir
+
+# pack
+/onmyoji_win.zip
+onmyoji_win.zip
