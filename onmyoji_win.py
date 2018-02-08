@@ -251,11 +251,11 @@ class GameController:
 
 class Application(Frame):
     def __init__(self, master=None):
-        self.warning = '''【封号防止】
-请尽量在自己的日常刷魂时间使用
-请不要长时间连续使用，任何使你看起来明显违背人类正常作息规律的行为，很容易会被鬼使黑盯上
-当你离开了常在城市，请不要使用，这会被认为是找了代练
-点到为止，贪婪是万恶之源'''
+        self.warning = '【封号防止】\n' + \
+                       '请尽量在自己的日常刷魂时间使用\n' + \
+                       '请不要长时间连续使用，任何使你看起来明显违背人类正常作息规律的行为，很容易会被鬼使黑盯上\n' + \
+                       '当你离开了常在城市，请不要使用，这会被认为是找了代练\n' + \
+                       '点到为止，贪婪是万恶之源\n'
         self.label = r'阴阳师-网易游戏'
         # self.label = r'Foxmail'
         self.hwnd = self.check_hwnd(self.label)
@@ -271,9 +271,6 @@ class Application(Frame):
             self.scaling = 1
             self.clear_time = 35
         self.fight = None
-        # print(self.release)
-        # print(self.scaling)
-        # print(self.clear_time)
 
         # 控件初始化
         Frame.__init__(self, master)
@@ -388,7 +385,6 @@ class Application(Frame):
                 setting_data = data['setting']
                 self.scaling = setting_data['scaling']
                 self.clear_time = setting_data['clear_time']
-                # print(setting_data['scaling'])
         except KeyError:
             return False
         return True
@@ -419,8 +415,6 @@ class Application(Frame):
             return False
         self.info_save()
         self.fight = GameController(self.hwnd, self.release, self.scaling)
-        # print(self.fight.get_curpos())
-        # self.a = Job(target=self.thread_test, name='thread_test')
         thread1 = threading.Thread(target=self.fight_thread, name='fight_thread')
         # 将线程状态、队列内容置为1
         self._running = True
@@ -488,7 +482,6 @@ class Application(Frame):
     def what_is_scaling_window(self):
         what_is_scaling = Toplevel(self)
         what_is_scaling.title('缩放倍率 - 不能自动获取，技术就是这么菜，不服憋着_(:3」∠)_')
-        # what_is_scaling.geometry('1000x600+200+100')
 
         frame1 = Frame(what_is_scaling)
         frame1.pack()
@@ -535,7 +528,6 @@ class Application(Frame):
     def when_click_start_window(self):
         when_click_start = Toplevel(self)
         when_click_start.title('模式说明')
-        # when_click_start.geometry('600x400+200+100')
 
         var = self.listbox_mode.get()
         if var == '单刷':
@@ -560,7 +552,7 @@ class Application(Frame):
             title.pack()
             desc = Message(when_click_start)
             desc['text'] = '\n建议接受了司机的默认邀请，再点START\n' + \
-                           '因为我不会在战斗里帮你点开始...不服憋着_(:3」∠)_\n'
+                           '因为我不会在战斗里帮你点开始...不服憋着\n_(:3」∠)_\n'
             desc['width'] = 300
             desc.pack()
 
@@ -577,7 +569,7 @@ class Application(Frame):
             title.pack()
             desc = Message(when_click_start)
             desc['text'] = '\n建议对乘客发出默认邀请，回到组队界面再点START\n' + \
-                           '因为自动发出邀请这个功能没写...不服憋着_(:3」∠)_\n'
+                           '因为自动发出邀请这个功能没写...不服憋着\n_(:3」∠)_\n'
             desc['width'] = 300
             desc.pack()
 
@@ -609,7 +601,7 @@ class Application(Frame):
         desc = Message(what_is_clear)
         desc['text'] = '\n平均通关时间是指在游戏中，从按下开始战斗到进入结算奖励界面所经过的时间(秒)\n' + \
                        '\n程序会在经过指定的时间后，再开始检测游戏画面是否进入了结算界面\n' + \
-                       '\n如果设置一个较短的时间也可以，不过设置一个合理的时间，能节省你CPU资源（其实也没占多少_(:3」∠)_\n'
+                       '\n如果设置一个较短的时间也可以，不过设置一个合理的时间，能节省你CPU资源\n（其实也没占多少_(:3」∠)_\n'
         desc['width'] = 300
         desc.pack()
         self.init_window_place(what_is_clear, 1.3, 3)
