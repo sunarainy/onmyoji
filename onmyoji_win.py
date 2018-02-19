@@ -5,7 +5,7 @@ import datetime
 import os
 import random
 import shelve
-import platform
+# import platform
 import threading
 from queue import Queue
 import win32api, win32gui, win32con, win32com.client
@@ -18,78 +18,74 @@ from tkinter.scrolledtext import ScrolledText
 
 
 class GameController:
-    def __init__(self, hwnd, release, scaling):
+    def __init__(self, hwnd, scaling):
         # 获取游戏窗口坐标
         self.hwnd = hwnd
         self.left, self.top, self.right, self.bottom = win32gui.GetWindowRect(self.hwnd)
+        # 获取游戏窗口坐标
+        self.hwnd = hwnd
+        self.client_rect = win32gui.GetClientRect(self.hwnd)
+        self.width = self.client_rect[2]
+        self.height = self.client_rect[3]
         # 获取游戏画面坐标
-        if release == '10':
-            self.right, self.bottom = win32gui.ClientToScreen(self.hwnd,
-                                                              (self.right - self.left - 17,
-                                                               self.bottom - self.top - 39))  # 神奇的游戏窗口
-        else:
-            self.right, self.bottom = win32gui.ClientToScreen(self.hwnd,
-                                                              (self.right - self.left - 17,
-                                                               self.bottom - self.top - 39 - 6))
         self.left, self.top = win32gui.ClientToScreen(self.hwnd, (0, 0))
+        self.right, self.bottom = win32gui.ClientToScreen(self.hwnd, (self.width, self.height))
         # 缩放后的游戏窗口坐标
         self.ltrb = list(map(lambda x: x * scaling, [self.left, self.top, self.right, self.bottom]))
-        self.width = self.right - self.left
-        self.high = self.bottom - self.top
         self.scaling_width = self.width * scaling
-        self.scaling_high = self.high * scaling
+        self.scaling_height = self.height * scaling
         # 挑战按钮坐标
         self.chllg_btn = (round(self.left + self.width * 0.695),
-                          round(self.top + self.high * 0.67),
+                          round(self.top + self.height * 0.67),
                           round(self.left + self.width * 0.785),
-                          round(self.top + self.high * 0.73))
+                          round(self.top + self.height * 0.73))
         # 开始战斗按钮坐标
         self.fght_btn = (round(self.left + self.width * 0.75),
-                         round(self.top + self.high * 0.82),
+                         round(self.top + self.height * 0.82),
                          round(self.left + self.width * 0.87),
-                         round(self.top + self.high * 0.88))
+                         round(self.top + self.height * 0.88))
         # 退出战斗按钮采样坐标
         self.exit_btn = (round(self.ltrb[0] + self.scaling_width * 0.014),
-                         round(self.ltrb[1] + self.scaling_high * 0.0245),
+                         round(self.ltrb[1] + self.scaling_height * 0.0245),
                          round(self.ltrb[0] + self.scaling_width * 0.0415),
-                         round(self.ltrb[1] + self.scaling_high * 0.074))
+                         round(self.ltrb[1] + self.scaling_height * 0.074))
         # 退出战斗按钮hash
         self.exit_btn_hash = '1ff83ffc3ffe3ffe007e001f001f019f079e1ffe7fff7ffe1ff8078001800000'
         # 结算判定区域采样坐标
         self.settle_area = (round(self.ltrb[0] + self.scaling_width * 0.42),
-                            round(self.ltrb[1] + self.scaling_high * 0.82),
+                            round(self.ltrb[1] + self.scaling_height * 0.82),
                             round(self.ltrb[0] + self.scaling_width * 0.58),
-                            round(self.ltrb[1] + self.scaling_high * 0.86))
+                            round(self.ltrb[1] + self.scaling_height * 0.86))
         # 结算判定区域hash
         self.settle_area_hash = '4f3f672f600fa01fb03ff03ff07df874f171d170c170c970c320c020c000c000'
         # 单刷界面判定采样坐标
         self.single_intf = (round(self.ltrb[0] + self.scaling_width * 0.45),
-                            round(self.ltrb[1] + self.scaling_high * 0.1),
+                            round(self.ltrb[1] + self.scaling_height * 0.1),
                             round(self.ltrb[0] + self.scaling_width * 0.58),
-                            round(self.ltrb[1] + self.scaling_high * 0.18))
+                            round(self.ltrb[1] + self.scaling_height * 0.18))
         self.single_hash = '000000000000000000186e1836387ebc7ebc7eb86ed897fc0000ffffffffffff'
         # 组队界面判定采样坐标#
         self.form_team_intf = (round(self.ltrb[0] + self.scaling_width * 0.12),
-                               round(self.ltrb[1] + self.scaling_high * 0.8),
+                               round(self.ltrb[1] + self.scaling_height * 0.8),
                                round(self.ltrb[0] + self.scaling_width * 0.24),
-                               round(self.ltrb[1] + self.scaling_high * 0.88))
+                               round(self.ltrb[1] + self.scaling_height * 0.88))
         # 组队界面判定hash
         self.form_team_hash = '7ffeffffffffffffcd33cd33c823c923cd93c901e577ffffffff7ffe00000000'
         # 组队栏位1采样坐标
         self.form_team1 = (round(self.ltrb[0] + self.scaling_width * 0.2),
-                           round(self.ltrb[1] + self.scaling_high * 0.4),
+                           round(self.ltrb[1] + self.scaling_height * 0.4),
                            round(self.ltrb[0] + self.scaling_width * 0.28),
-                           round(self.ltrb[1] + self.scaling_high * 0.53))
+                           round(self.ltrb[1] + self.scaling_height * 0.53))
         # 组队栏位2采样坐标
         self.form_team2 = (round(self.ltrb[0] + self.scaling_width * 0.46),
-                           round(self.ltrb[1] + self.scaling_high * 0.4),
+                           round(self.ltrb[1] + self.scaling_height * 0.4),
                            round(self.ltrb[0] + self.scaling_width * 0.54),
-                           round(self.ltrb[1] + self.scaling_high * 0.53))
+                           round(self.ltrb[1] + self.scaling_height * 0.53))
         # 组队栏位3采样坐标
         self.form_team3 = (round(self.ltrb[0] + self.scaling_width * 0.76),
-                           round(self.ltrb[1] + self.scaling_high * 0.4),
+                           round(self.ltrb[1] + self.scaling_height * 0.4),
                            round(self.ltrb[0] + self.scaling_width * 0.84),
-                           round(self.ltrb[1] + self.scaling_high * 0.53))
+                           round(self.ltrb[1] + self.scaling_height * 0.53))
         # 点击屏幕继续字样采样坐标
         self.notice_area = (round(self.ltrb[2] * 0.40),
                             round(self.ltrb[3] * 0.90),
@@ -97,9 +93,9 @@ class GameController:
                             round(self.ltrb[3] * 0.97))
         # 结算点击区域坐标
         self.blank_area = (round(self.left + self.width * 0.86),
-                           round(self.top + self.high * 0.23),
+                           round(self.top + self.height * 0.23),
                            round(self.left + self.width * 0.95),
-                           round(self.top + self.high * 0.7))
+                           round(self.top + self.height * 0.7))
         # 组队栏位为空时hash
         self.form_team_blank_hash = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
 
@@ -266,11 +262,12 @@ class Application(Frame):
         # self.shell.SendKeys('%')
 
         # 获取操作系统版本
-        self.release = platform.platform().split('-')[1]
+        # self.release = platform.platform().split('-')[1]
         if not self.info_get():
             self.scaling = 1
             self.clear_time = 35
         self.fight = None
+        self.timing_value = None
 
         # 控件初始化
         Frame.__init__(self, master)
@@ -302,6 +299,13 @@ class Application(Frame):
         self.entry_clear_time = Entry(self.frame1)
 
         self.button_clear_time_explain = Button(self.frame1)
+
+        self.label_timing_mode = Label(self.frame1)
+        self.var_timing_mode = StringVar(self.frame1)
+        self.listbox_timing_mode = ttk.Combobox(self.frame1)
+
+        self.var_timing_value = StringVar(self.frame1)
+        self.entry_timing_value = Entry(self.frame1)
 
         self.entry_test = Entry(self.frame1)
         self.test_btn = Button(self.frame1)
@@ -366,6 +370,18 @@ class Application(Frame):
             return False
         return var
 
+    def get_timimg(self):
+        var = self.var_timing_value.get()
+        try:
+            var = float(var)
+        except ValueError:
+            messagebox.showinfo(title='提示', message='预定结束只能填入数字')
+            return False
+        if var < 1:
+            messagebox.showinfo(title='提示', message='数字过小，无法执行')
+            return False
+        return var
+
     @staticmethod
     def time_format(second):
         try:
@@ -406,6 +422,14 @@ class Application(Frame):
             self.radio1.configure(state='disabled')
             self.radio2.configure(state='disabled')
 
+    def turn_entry_on(self, *args):
+        type(args)
+        var = self.listbox_timing_mode.get()
+        if var == '定时[分钟]' or var == '场数':
+            self.entry_timing_value.configure(state='normal')
+        else:
+            self.entry_timing_value.configure(state='disabled')
+
     def fight_start(self):
         self.scaling = self.get_scaling()
         if not self.scaling:
@@ -413,8 +437,12 @@ class Application(Frame):
         self.clear_time = self.get_clear_time()
         if not self.clear_time:
             return False
+        self.timing_value = self.get_timimg()
+        if not self.timing_value:
+            return False
         self.info_save()
-        self.fight = GameController(self.hwnd, self.release, self.scaling)
+        self.jump_window()
+        self.fight = GameController(self.hwnd, self.scaling)
         thread1 = threading.Thread(target=self.fight_thread, name='fight_thread')
         # 将线程状态、队列内容置为1
         self._running = True
@@ -458,6 +486,15 @@ class Application(Frame):
                     self.info_box.mark_set('insert', END)
                     self.info_box.insert('insert', str(var) + '\n')
                     self.info_box.see(END)
+                    # 检查是否到达预定结束场数或时间
+                    if (self.listbox_timing_mode.get() == '场数' and rounds >= self.timing_value) or \
+                       (self.listbox_timing_mode.get() == '定时[分钟]' and total_time / 60 >= self.timing_value):
+                        win32gui.PostMessage(self.hwnd, win32con.WM_CLOSE, 0, 0)
+                        self.fight_stop()
+                        var = '已到达预定目标，游戏窗口已关闭。下线15分钟后buff自动关闭'
+                        self.info_box.mark_set('insert', END)
+                        self.info_box.insert('insert', str(var) + '\n')
+                        self.info_box.see(END)
                     time.sleep(random.uniform(1, 2))
             elif self._running == 0:
                 return
@@ -660,6 +697,21 @@ class Application(Frame):
         self.button_clear_time_explain['relief'] = 'flat'
         self.button_clear_time_explain.grid(row=3, column=2, sticky='E')
 
+        self.label_timing_mode['text'] = '预定结束'
+        self.var_timing_mode.set('无')
+        self.listbox_timing_mode['textvariable'] = self.var_timing_mode
+        self.listbox_timing_mode['width'] = 10
+        self.listbox_timing_mode['values'] = ["无", "定时[分钟]", "场数"]
+        self.listbox_timing_mode.bind("<<ComboboxSelected>>", self.turn_entry_on)
+        self.label_timing_mode.grid(row=4, column=0, sticky='E')
+        self.listbox_timing_mode.grid(row=4, column=1, sticky='W')
+
+        self.var_timing_value.set('')
+        self.entry_timing_value['textvariable'] = self.var_timing_value
+        self.entry_timing_value['width'] = 5
+        self.entry_timing_value.configure(state='disabled')
+        self.entry_timing_value.grid(row=4, column=2, sticky='W')
+
         self.start_ctn['text'] = 'START'
         self.start_ctn['width'] = 10
         self.start_ctn['height'] = 2
@@ -686,6 +738,11 @@ class Application(Frame):
 
 
 app = Application()
+# 隐藏console窗口
+whnd = windll.kernel32.GetConsoleWindow()
+if whnd:
+    windll.user32.ShowWindow(whnd, 0)
+    windll.kernel32.CloseHandle(whnd)
 app.master.title('就你破势多')
 app.init_window_place(app.master, 1.1, 4)
 app.mainloop()
