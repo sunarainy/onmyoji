@@ -469,6 +469,7 @@ class Application(Frame):
         self.info_box.see(END)
         rounds = 0
         total_time = 0
+        beginning_timg = time.clock()
         while True:
             if self._running == 1:
                 fight_start_time = time.clock()
@@ -482,14 +483,15 @@ class Application(Frame):
                     # time.sleep(0.5)
                     rounds = rounds + 1
                     total_time = total_time + fight_time
+                    elapsed_time = fight_end_time - beginning_timg
                     var = '第 %s 场 耗时：%s 共计：%s' % \
-                          (rounds, self.time_format(fight_time), self.time_format(total_time))
+                          (rounds, self.time_format(fight_time), self.time_format(elapsed_time))
                     self.info_box.mark_set('insert', END)
                     self.info_box.insert('insert', str(var) + '\n')
                     self.info_box.see(END)
                     # 检查是否到达预定结束场数或时间
                     if (self.listbox_timing_mode.get() == '场数' and rounds >= self.timing_value) or \
-                       (self.listbox_timing_mode.get() == '定时[分钟]' and total_time / 60 >= self.timing_value):
+                       (self.listbox_timing_mode.get() == '定时[分钟]' and elapsed_time / 60 >= self.timing_value):
                         win32gui.PostMessage(self.hwnd, win32con.WM_CLOSE, 0, 0)
                         self.fight_stop()
                         var = '已到达预定目标，游戏窗口已关闭。下线15分钟后buff自动关闭'
