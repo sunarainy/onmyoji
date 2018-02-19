@@ -3,6 +3,7 @@
 import time
 import datetime
 import os
+import sys
 import random
 import shelve
 # import platform
@@ -739,10 +740,17 @@ class Application(Frame):
 
 app = Application()
 # 隐藏console窗口
-whnd = windll.kernel32.GetConsoleWindow()
-if whnd:
-    windll.user32.ShowWindow(whnd, 0)
-    windll.kernel32.CloseHandle(whnd)
+try:
+    test = sys.argv[1]
+except IndexError:
+    test = False
+if test == 'test':
+    pass
+else:
+    whnd = windll.kernel32.GetConsoleWindow()
+    if whnd:
+        windll.user32.ShowWindow(whnd, 0)
+        windll.kernel32.CloseHandle(whnd)
 app.master.title('就你破势多')
 app.init_window_place(app.master, 1.1, 4)
 app.mainloop()
