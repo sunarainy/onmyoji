@@ -372,6 +372,8 @@ class Application(Frame):
         return var
 
     def get_timimg(self):
+        if self.listbox_timing_mode.get() == '无':
+            return True
         var = self.var_timing_value.get()
         try:
             var = float(var)
