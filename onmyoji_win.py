@@ -100,6 +100,21 @@ class GameController:
         # 组队栏位为空时hash
         self.form_team_blank_hash = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
 
+        # 悬赏界面采样坐标
+        self.offer_intf = (round(self.ltrb[0] + self.scaling_width * 0.4),
+                           round(self.ltrb[1] + self.scaling_height * 0.2),
+                           round(self.ltrb[0] + self.scaling_width * 0.6),
+                           round(self.ltrb[1] + self.scaling_height * 0.28))
+        # 悬赏界面hash
+        self.offer_hash = 'ffffffffffff3fff35fde004200020000004040420100064247037f7ffffffff'
+        # 悬赏接受按钮坐标
+        self.accept = (round(self.left + self.width * 0.66),
+                       round(self.top + self.height * 0.6))
+        # 悬赏拒绝按钮坐标
+        self.denied = (round(self.left + self.width * 0.66),
+                       round(self.top + self.height * 0.74))
+
+        # 状态初始化
         self._running = 1
 
     @staticmethod
@@ -245,6 +260,22 @@ class GameController:
                 break
             time.sleep(0.5)
 
+    def check_offer(self, offer_mode, queue):
+        while True:
+            if not queue.empty():
+                self._running = queue.get()
+            if self._running == 1:
+                catch_img = ImageGrab.grab(self.offer_intf)
+                if self.hamming(self.get_hash(catch_img), self.offer_hash, 30):
+                    if offer_mode == "接受":
+                        self.move_curpos(self.accept[0], self.accept[1])
+                    elif offer_mode == "拒绝":
+                        self.move_curpos(self.denied[0], self.denied[1])
+                    self.click_left_cur()
+                time.sleep(1.3)
+            elif self._running == 0:
+                return
+
 
 class Application(Frame):
     def __init__(self, master=None):
@@ -254,16 +285,8 @@ class Application(Frame):
                        '当你离开了常在城市，请不要使用，这会被认为是找了代练\n' + \
                        '点到为止，贪婪是万恶之源\n'
         self.label = r'阴阳师-网易游戏'
-        # self.label = r'Foxmail'
-        self.hwnd = self.check_hwnd(self.label)
-        if not self.hwnd:
-            messagebox.showinfo(title='提示', message='游戏没有运行')
-            quit()
-        self.shell = win32com.client.Dispatch("WScript.Shell")
-        # self.shell.SendKeys('%')
-
-        # 获取操作系统版本
-        # self.release = platform.platform().split('-')[1]
+        self.hwnd = None
+        self.shell = None
         if not self.info_get():
             self.scaling = 1
             self.clear_time = 35
@@ -301,6 +324,10 @@ class Application(Frame):
 
         self.button_clear_time_explain = Button(self.frame1)
 
+        self.label_offer = Label(self.frame1)
+        self.var_offer_mode = StringVar(self.frame1)
+        self.listbox_offer_mode = ttk.Combobox(self.frame1)
+
         self.label_timing_mode = Label(self.frame1)
         self.var_timing_mode = StringVar(self.frame1)
         self.listbox_timing_mode = ttk.Combobox(self.frame1)
@@ -317,7 +344,7 @@ class Application(Frame):
         self.info_box = ScrolledText(self.frame2)
 
         self.queue = Queue(maxsize=1)
-        self._running = True
+        self._running = 1
         self.create_main()
 
     @staticmethod
@@ -444,11 +471,21 @@ class Application(Frame):
         if not self.timing_value:
             return False
         self.info_save()
+
+        # 获取游戏窗口句柄
+        self.hwnd = self.check_hwnd(self.label)
+        if not self.hwnd:
+            messagebox.showinfo(title='提示', message='游戏没有运行')
+            return False
+        self.shell = win32com.client.Dispatch("WScript.Shell")
+        # self.shell.SendKeys('%')
+
         self.jump_window()
         self.fight = GameController(self.hwnd, self.scaling)
         thread1 = threading.Thread(target=self.fight_thread, name='fight_thread')
+        thread2 = threading.Thread(target=self.offer_thread, name='offer_thread')
         # 将线程状态、队列内容置为1
-        self._running = True
+        self._running = 1
         if self.queue.empty():
             self.queue.put(1)
         else:
@@ -457,6 +494,7 @@ class Application(Frame):
         self.start_ctn.configure(state='disabled')
         self.stop_ctn.configure(state='active')
         thread1.start()
+        thread2.start()
 
     def fight_thread(self):
         self.jump_window()
@@ -506,7 +544,7 @@ class Application(Frame):
 
     def fight_stop(self):
         # 将线程状态、队列内容置为0
-        self._running = False
+        self._running = 0
         self.queue.put(0)
         self.start_ctn.configure(state='active')
         self.stop_ctn.configure(state='disabled')
@@ -514,6 +552,13 @@ class Application(Frame):
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(var) + '\n')
         self.info_box.see(END)
+
+    def offer_thread(self):
+        while True:
+            if self._running == 1:
+                self.fight.check_offer(self.listbox_offer_mode.get(), self.queue)
+            elif self._running == 0:
+                return
 
     @staticmethod
     def resource_path(relative_path):
@@ -702,20 +747,29 @@ class Application(Frame):
         self.button_clear_time_explain['relief'] = 'flat'
         self.button_clear_time_explain.grid(row=3, column=2, sticky='E')
 
+        self.label_offer['text'] = '好友发来悬赏'
+        self.var_offer_mode.set('接受')
+        self.listbox_offer_mode['textvariable'] = self.var_offer_mode
+        self.listbox_offer_mode['width'] = 10
+        self.listbox_offer_mode['values'] = ["接受", "拒绝"]
+        self.listbox_offer_mode.bind("<<ComboboxSelected>>", self.turn_radio_on)
+        self.label_offer.grid(row=4, column=0, sticky='E')
+        self.listbox_offer_mode.grid(row=4, column=1, sticky='W')
+
         self.label_timing_mode['text'] = '预定结束'
         self.var_timing_mode.set('无')
         self.listbox_timing_mode['textvariable'] = self.var_timing_mode
         self.listbox_timing_mode['width'] = 10
         self.listbox_timing_mode['values'] = ["无", "定时[分钟]", "场数"]
         self.listbox_timing_mode.bind("<<ComboboxSelected>>", self.turn_entry_on)
-        self.label_timing_mode.grid(row=4, column=0, sticky='E')
-        self.listbox_timing_mode.grid(row=4, column=1, sticky='W')
+        self.label_timing_mode.grid(row=5, column=0, sticky='E')
+        self.listbox_timing_mode.grid(row=5, column=1, sticky='W')
 
         self.var_timing_value.set('')
         self.entry_timing_value['textvariable'] = self.var_timing_value
         self.entry_timing_value['width'] = 5
         self.entry_timing_value.configure(state='disabled')
-        self.entry_timing_value.grid(row=4, column=2, sticky='W')
+        self.entry_timing_value.grid(row=5, column=2, sticky='W')
 
         self.start_ctn['text'] = 'START'
         self.start_ctn['width'] = 10
