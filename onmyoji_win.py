@@ -3,10 +3,8 @@
 import time
 import datetime
 import os
-import sys
 import random
 import shelve
-# import platform
 import threading
 from queue import Queue
 import win32api, win32gui, win32con, win32com.client
@@ -23,8 +21,6 @@ class GameController:
         # 获取游戏窗口坐标
         self.hwnd = hwnd
         self.left, self.top, self.right, self.bottom = win32gui.GetWindowRect(self.hwnd)
-        # 获取游戏窗口坐标
-        self.hwnd = hwnd
         self.client_rect = win32gui.GetClientRect(self.hwnd)
         self.width = self.client_rect[2]
         self.height = self.client_rect[3]
@@ -481,6 +477,7 @@ class Application(Frame):
         # self.shell.SendKeys('%')
 
         self.jump_window()
+        time.sleep(0.5)
         self.fight = GameController(self.hwnd, self.scaling)
         thread1 = threading.Thread(target=self.fight_thread, name='fight_thread')
         thread2 = threading.Thread(target=self.offer_thread, name='offer_thread')
