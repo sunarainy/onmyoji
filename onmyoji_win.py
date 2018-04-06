@@ -89,7 +89,7 @@ class GameController:
                             round(self.ltrb[2] * 0.60),
                             round(self.ltrb[3] * 0.97))
         # 结算点击区域坐标
-        self.blank_area = (round(self.left + self.width * 0.86),
+        self.blank_area = (round(self.left + self.width * 0.89),
                            round(self.top + self.height * 0.23),
                            round(self.left + self.width * 0.95),
                            round(self.top + self.height * 0.7))
@@ -147,6 +147,9 @@ class GameController:
             result = True
         return result
 
+    def move_curpos_test(self):
+        self.move_curpos(self.blank_area[0], self.blank_area[1])
+
     def form_team_phase(self, mode, fight_num, queue):
         if mode == '单刷':
             # 移动到挑战按钮并点击 每次移动在按钮范围内加入随机坐标位移
@@ -189,11 +192,23 @@ class GameController:
             yrandom = int(random.uniform(0, self.fght_btn[3] - self.fght_btn[1]))
             self.move_curpos(self.fght_btn[0] + xrandom, self.fght_btn[1] + yrandom)
             time.sleep(0.5)
-            self.click_left_cur()
+            self.click_left_cur(2)
         elif mode == '乘客':
-            return
+            # 检测是否进入战斗状态
+            while True:
+                if not queue.empty():
+                    self._running = queue.get()
+                if self._running == 1:
+                    catch_img = ImageGrab.grab(self.exit_btn)
+                    if self.hamming(self.get_hash(catch_img), self.exit_btn_hash, 30):
+                        break
+                    time.sleep(0.5)
+                elif self._running == 0:
+                    return
 
-    def wait_fight_finish_phase(self, clear_time, queue):
+    def wait_fight_finish_phase(self, mode, clear_time, queue):
+        if mode == '乘客':
+            clear_time = clear_time - 3
         t = 0
         while t < clear_time:
             if not queue.empty():
@@ -244,7 +259,7 @@ class GameController:
             if self._running == 1:
                 catch_img = ImageGrab.grab(self.settle_area)
                 # 当结算达摩消失时，视为结算结束
-                if not self.hamming(self.get_hash(catch_img), self.settle_area_hash, 20):
+                if not self.hamming(self.get_hash(catch_img), self.settle_area_hash, 30):
                     break
                 else:
                     # 在右侧边缘范围内随机移动鼠标位置，并随机点击1-3次，直到结算结束
@@ -255,6 +270,11 @@ class GameController:
             elif self._running == 0:
                 break
             time.sleep(0.5)
+        # 防止判定失误再补一次点击
+        xrandom = int(random.uniform(0, self.blank_area[2] - self.blank_area[0]))
+        yrandom = int(random.uniform(0, self.blank_area[3] - self.blank_area[1]))
+        self.move_curpos(self.blank_area[0] + xrandom, self.blank_area[1] + yrandom)
+        self.click_left_cur(int(random.uniform(1, 3)))
 
     def check_offer(self, offer_mode, queue):
         while True:
@@ -330,6 +350,10 @@ class Application(Frame):
 
         self.var_timing_value = StringVar(self.frame1)
         self.entry_timing_value = Entry(self.frame1)
+
+        self.label_done_action_mode = Label(self.frame1)
+        self.var_done_action_mode = StringVar(self.frame1)
+        self.listbox_done_action_mode = ttk.Combobox(self.frame1)
 
         self.entry_test = Entry(self.frame1)
         self.test_btn = Button(self.frame1)
@@ -453,8 +477,12 @@ class Application(Frame):
         var = self.listbox_timing_mode.get()
         if var == '定时[分钟]' or var == '场数':
             self.entry_timing_value.configure(state='normal')
+            self.listbox_done_action_mode.configure(state='normal')
+            self.var_done_action_mode.set('关闭游戏窗口')
         else:
             self.entry_timing_value.configure(state='disabled')
+            self.var_done_action_mode.set('')
+            self.listbox_done_action_mode.configure(state='disabled')
 
     def fight_start(self):
         self.scaling = self.get_scaling()
@@ -509,9 +537,12 @@ class Application(Frame):
         beginning_timg = time.clock()
         while True:
             if self._running == 1:
+                # self.fight.move_curpos_test()
+                # self.fight_stop()
+                # time.sleep(5)
                 fight_start_time = time.clock()
                 self.fight.form_team_phase(self.listbox_mode.get(), self.var_member.get(), self.queue)
-                self.fight.wait_fight_finish_phase(self.clear_time, self.queue)
+                self.fight.wait_fight_finish_phase(self.listbox_mode.get(), self.clear_time, self.queue)
                 self.jump_window()
                 self.fight.settle_phase(self.queue)
                 if self._running == 1:
@@ -529,9 +560,12 @@ class Application(Frame):
                     # 检查是否到达预定结束场数或时间
                     if (self.listbox_timing_mode.get() == '场数' and rounds >= self.timing_value) or \
                        (self.listbox_timing_mode.get() == '定时[分钟]' and elapsed_time / 60 >= self.timing_value):
-                        win32gui.PostMessage(self.hwnd, win32con.WM_CLOSE, 0, 0)
+                        if self.listbox_done_action_mode.get() == '关闭游戏窗口':
+                            win32gui.PostMessage(self.hwnd, win32con.WM_CLOSE, 0, 0)
+                            var = '已到达预定目标，游戏窗口已关闭。下线15分钟后buff自动关闭'
+                        elif self.listbox_done_action_mode.get() == '仅停止挂机':
+                            var = '已到达预定目标，挂机已停止。'
                         self.fight_stop()
-                        var = '已到达预定目标，游戏窗口已关闭。下线15分钟后buff自动关闭'
                         self.info_box.mark_set('insert', END)
                         self.info_box.insert('insert', str(var) + '\n')
                         self.info_box.see(END)
@@ -749,7 +783,7 @@ class Application(Frame):
         self.listbox_offer_mode['textvariable'] = self.var_offer_mode
         self.listbox_offer_mode['width'] = 10
         self.listbox_offer_mode['values'] = ["接受", "拒绝"]
-        self.listbox_offer_mode.bind("<<ComboboxSelected>>", self.turn_radio_on)
+        # self.listbox_offer_mode.bind("<<ComboboxSelected>>", self.turn_entry_on)
         self.label_offer.grid(row=4, column=0, sticky='E')
         self.listbox_offer_mode.grid(row=4, column=1, sticky='W')
 
@@ -767,6 +801,16 @@ class Application(Frame):
         self.entry_timing_value['width'] = 5
         self.entry_timing_value.configure(state='disabled')
         self.entry_timing_value.grid(row=5, column=2, sticky='W')
+
+        self.label_done_action_mode['text'] = '预定结束后动作'
+        self.var_done_action_mode.set('')
+        self.listbox_done_action_mode['textvariable'] = self.var_done_action_mode
+        self.listbox_done_action_mode['width'] = 10
+        self.listbox_done_action_mode.configure(state='disabled')
+        self.listbox_done_action_mode['values'] = ["关闭游戏窗口", "仅停止挂机"]
+        # self.listbox_done_action_mode.bind("<<ComboboxSelected>>", self.turn_entry_on)
+        self.label_done_action_mode.grid(row=6, column=0, sticky='E')
+        self.listbox_done_action_mode.grid(row=6, column=1, sticky='W')
 
         self.start_ctn['text'] = 'START'
         self.start_ctn['width'] = 10
