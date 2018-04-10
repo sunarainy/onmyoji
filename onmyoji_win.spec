@@ -3,7 +3,7 @@
 block_cipher = None
 
 a = Analysis(['onmyoji_win.py'],
-             pathex=['C:\\DATA\\WorkSpace\\PycharmProjects\\onmyoji'],
+             pathex=['.'],
              binaries=[],
              datas=[],
              hiddenimports=[],
@@ -13,12 +13,12 @@ a = Analysis(['onmyoji_win.py'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher)
-a.datas += [('image/win10.png', 'C:\\DATA\\WorkSpace\\PycharmProjects\\onmyoji\\image\\win10.png',  'DATA'),
-('image/win7.png','C:\\DATA\\WorkSpace\\PycharmProjects\\onmyoji\\image\\win7.png','DATA'),
-('image/single.png', 'C:\\DATA\\WorkSpace\\PycharmProjects\\onmyoji\\image\\single.png',  'DATA'),
-('image/passenger_accept.png', 'C:\\DATA\\WorkSpace\\PycharmProjects\\onmyoji\\image\\passenger_accept.png',  'DATA'),
-('image/driver_invite.png', 'C:\\DATA\\WorkSpace\\PycharmProjects\\onmyoji\\image\\driver_invite.png',  'DATA'),
-('image/driver_form.png', 'C:\\DATA\\WorkSpace\\PycharmProjects\\onmyoji\\image\\driver_form.png',  'DATA')] 
+a.datas += [('image/win10.png', '.\\image\\win10.png',  'DATA'),
+('image/win7.png','.\\image\\win7.png','DATA'),
+('image/single.png', '.\\image\\single.png',  'DATA'),
+('image/passenger_accept.png', '.\\image\\passenger_accept.png',  'DATA'),
+('image/driver_invite.png', '.\\image\\driver_invite.png',  'DATA'),
+('image/driver_form.png', '.\\image\\driver_form.png',  'DATA')] 
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
