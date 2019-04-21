@@ -27,6 +27,7 @@ class Application(Frame):
         控件初始化
         :param master:
         """
+        self.debug = False
         self.warning = '【封号防止】\n' + \
                        '请尽量在自己的日常刷魂时间使用\n' + \
                        '请不要长时间连续使用，任何使你看起来明显违背人类正常作息规律的行为，很容易会被鬼使黑盯上\n' + \
@@ -38,6 +39,7 @@ class Application(Frame):
         if not self.info_get():
             self.scaling = 1
             self.clear_time = 35
+            self.delay_time = 1
         self.fight = None
         self.timing_value = None
 
@@ -72,6 +74,12 @@ class Application(Frame):
 
         self.button_clear_time_explain = Button(self.frame1)
 
+        self.label_delay_time = Label(self.frame1)
+        self.var_delay_time = StringVar(self.frame1)
+        self.entry_delay_time = Entry(self.frame1)
+
+        self.button_delay_time_explain = Button(self.frame1)
+
         self.label_offer = Label(self.frame1)
         self.var_offer_mode = StringVar(self.frame1)
         self.listbox_offer_mode = ttk.Combobox(self.frame1)
@@ -98,6 +106,9 @@ class Application(Frame):
         self.queue = Queue(maxsize=1)
         self._running = 1
         self.create_main()
+
+    def setdebug(self, debug):
+        self.debug = debug
 
     @staticmethod
     def check_hwnd(label):
@@ -172,6 +183,22 @@ class Application(Frame):
             return False
         return var
 
+    def get_delay_time(self):
+        """
+        校验平均通关时间输入值
+        :return: 校验通过则返回浮点型数字，否则返回False
+        """
+        var = self.var_delay_time.get()
+        try:
+            var = float(var)
+        except ValueError:
+            messagebox.showinfo(title='提示', message='战斗后等待时间只能为数字')
+            return False
+        if var <= 0:
+            messagebox.showinfo(title='提示', message='战斗后等待时间不能小于0')
+            return False
+        return var
+
     def get_timimg(self):
         """
         校验预定结束输入值
@@ -218,6 +245,7 @@ class Application(Frame):
                 setting_data = data['setting']
                 self.scaling = setting_data['scaling']
                 self.clear_time = setting_data['clear_time']
+                self.delay_time = setting_data['delay_time']
         except KeyError:
             return False
         return True
@@ -231,6 +259,7 @@ class Application(Frame):
             setting_data = dict()
             setting_data['scaling'] = self.var_scaling.get()
             setting_data['clear_time'] = self.var_clear_time.get()
+            setting_data['delay_time'] = self.var_delay_time.get()
             data['setting'] = setting_data
 
     def turn_radio_on(self, *args):
@@ -276,6 +305,9 @@ class Application(Frame):
         self.clear_time = self.get_clear_time()
         if not self.clear_time:
             return False
+        self.delay_time = self.get_delay_time()
+        if not self.delay_time:
+            return False
         self.timing_value = self.get_timimg()
         if not self.timing_value:
             return False
@@ -292,6 +324,8 @@ class Application(Frame):
         self.jump_window()
         time.sleep(0.5)
         self.fight = GameController(self.hwnd, self.scaling)
+        if self.debug:
+            self.fight.setdebug(True)
         thread1 = threading.Thread(target=self.fight_thread, name='fight_thread')
         thread2 = threading.Thread(target=self.offer_thread, name='offer_thread')
         # 将线程状态、队列内容置为1
@@ -329,6 +363,10 @@ class Application(Frame):
         self.jump_window()
         if not self.queue.empty():
             self.queue.get()
+        # if self.debug:
+        #     self.fight.move_curpos_test()
+        #     self.fight_stop()
+        #     return
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(self.warning) + '\n', 'RED')
         self.info_box.tag_config('RED', foreground='red')
@@ -348,7 +386,7 @@ class Application(Frame):
                 self.fight.form_team_phase(self.listbox_mode.get(), self.var_member.get(), self.queue)
                 self.fight.wait_fight_finish_phase(self.listbox_mode.get(), self.clear_time, self.queue)
                 self.jump_window()
-                self.fight.settle_phase(self.queue)
+                self.fight.settle_phase_2(self.queue)
                 if self._running == 1:
                     fight_end_time = time.clock()
                     fight_time = fight_end_time - fight_start_time
@@ -366,6 +404,11 @@ class Application(Frame):
                        (self.listbox_timing_mode.get() == '定时[分钟]' and elapsed_time / 60 >= self.timing_value):
                         if self.listbox_done_action_mode.get() == '关闭游戏窗口':
                             win32gui.PostMessage(self.hwnd, win32con.WM_CLOSE, 0, 0)
+                            time.sleep(1)
+                            lebel_exit = '退出游戏'
+                            hwnd_exit = self.check_hwnd(lebel_exit)
+                            win32gui.PostMessage(hwnd_exit, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+                            win32gui.PostMessage(hwnd_exit, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
                             var = '已到达预定目标，游戏窗口已关闭。下线15分钟后buff自动关闭'
                         elif self.listbox_done_action_mode.get() == '仅停止挂机':
                             var = '已到达预定目标，挂机已停止。'
@@ -373,7 +416,9 @@ class Application(Frame):
                         self.info_box.mark_set('insert', END)
                         self.info_box.insert('insert', str(var) + '\n')
                         self.info_box.see(END)
-                    time.sleep(random.uniform(1, 2))
+                    random.uniform(1, 2)
+                    delay_time = int(self.delay_time) + random.uniform(0.2, 0.5)
+                    time.sleep(delay_time)
             elif self._running == 0:
                 return
 
@@ -521,6 +566,20 @@ class Application(Frame):
         desc.pack()
         self.init_window_place(what_is_clear, 1.3, 3)
 
+    def what_is_delay_time(self):
+        what_is_delay = Toplevel(self)
+        what_is_delay.title('战斗后等待时间说明')
+
+        title = Label(what_is_delay)
+        title['text'] = '\n【 战斗后等待时间 】'
+        title.pack()
+        desc = Message(what_is_delay)
+        desc['text'] = '\n战斗后等待时间是指，在下一次战斗开始前强制等待的时间(秒)\n' + \
+                       '\n填入的时间还会加上一个300毫秒以内的随机时间\n'
+        desc['width'] = 300
+        desc.pack()
+        self.init_window_place(what_is_delay, 1.3, 3)
+
     def create_main(self):
         """
         窗体、控件绘制
@@ -579,14 +638,25 @@ class Application(Frame):
         self.button_clear_time_explain['relief'] = 'flat'
         self.button_clear_time_explain.grid(row=3, column=2, sticky='E')
 
+        self.label_delay_time['text'] = '战斗结束后等待时间'
+        self.var_delay_time.set(self.delay_time)
+        self.entry_delay_time['textvariable'] = self.var_delay_time
+        self.label_delay_time.grid(row=4, column=0, sticky='E')
+        self.entry_delay_time.grid(row=4, column=1, sticky='W', columnspan=2)
+
+        self.button_delay_time_explain['text'] = '?'
+        self.button_delay_time_explain['command'] = self.what_is_delay_time
+        self.button_delay_time_explain['relief'] = 'flat'
+        self.button_delay_time_explain.grid(row=4, column=2, sticky='E')
+
         self.label_offer['text'] = '好友发来悬赏'
         self.var_offer_mode.set('接受')
         self.listbox_offer_mode['textvariable'] = self.var_offer_mode
         self.listbox_offer_mode['width'] = 10
         self.listbox_offer_mode['values'] = ["接受", "拒绝"]
         # self.listbox_offer_mode.bind("<<ComboboxSelected>>", self.turn_entry_on)
-        self.label_offer.grid(row=4, column=0, sticky='E')
-        self.listbox_offer_mode.grid(row=4, column=1, sticky='W')
+        self.label_offer.grid(row=5, column=0, sticky='E')
+        self.listbox_offer_mode.grid(row=5, column=1, sticky='W')
 
         self.label_timing_mode['text'] = '预定结束'
         self.var_timing_mode.set('无')
@@ -594,14 +664,14 @@ class Application(Frame):
         self.listbox_timing_mode['width'] = 10
         self.listbox_timing_mode['values'] = ["无", "定时[分钟]", "场数"]
         self.listbox_timing_mode.bind("<<ComboboxSelected>>", self.turn_entry_on)
-        self.label_timing_mode.grid(row=5, column=0, sticky='E')
-        self.listbox_timing_mode.grid(row=5, column=1, sticky='W')
+        self.label_timing_mode.grid(row=6, column=0, sticky='E')
+        self.listbox_timing_mode.grid(row=6, column=1, sticky='W')
 
         self.var_timing_value.set('')
         self.entry_timing_value['textvariable'] = self.var_timing_value
         self.entry_timing_value['width'] = 5
         self.entry_timing_value.configure(state='disabled')
-        self.entry_timing_value.grid(row=5, column=2, sticky='W')
+        self.entry_timing_value.grid(row=6, column=2, sticky='W')
 
         self.label_done_action_mode['text'] = '预定结束后动作'
         self.var_done_action_mode.set('')
@@ -610,8 +680,8 @@ class Application(Frame):
         self.listbox_done_action_mode.configure(state='disabled')
         self.listbox_done_action_mode['values'] = ["关闭游戏窗口", "仅停止挂机"]
         # self.listbox_done_action_mode.bind("<<ComboboxSelected>>", self.turn_entry_on)
-        self.label_done_action_mode.grid(row=6, column=0, sticky='E')
-        self.listbox_done_action_mode.grid(row=6, column=1, sticky='W')
+        self.label_done_action_mode.grid(row=7, column=0, sticky='E')
+        self.listbox_done_action_mode.grid(row=7, column=1, sticky='W')
 
         self.start_ctn['text'] = 'START'
         self.start_ctn['width'] = 10
@@ -631,6 +701,10 @@ class Application(Frame):
         self.info_box['width'] = 40
         self.info_box['height'] = 20
         self.info_box.grid(row=1, column=0, columnspan=2)
+        self.info_box.see(END)
+        var = 'Build 20190421'
+        self.info_box.mark_set('insert', END)
+        self.info_box.insert('insert', str(var) + '\n')
         self.info_box.see(END)
         var = '请授予此程序管理员权限运行，否则在游戏窗口内鼠标无法被控制'
         self.info_box.mark_set('insert', END)
