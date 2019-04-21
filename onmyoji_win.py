@@ -10,8 +10,8 @@ try:
     para = sys.argv[1]
 except IndexError:
     para = False
-if para == 'test':
-    pass
+if para == 'debug':
+    app.setdebug(True)
 else:
     whnd = windll.kernel32.GetConsoleWindow()
     if whnd:
