@@ -765,7 +765,7 @@ class Application(Frame):
         self.info_box['height'] = 20
         self.info_box.grid(row=1, column=0, columnspan=2)
         self.info_box.see(END)
-        var = 'Build 20191216'
+        var = 'Build 20200125'
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(var) + '\n')
         self.info_box.see(END)
