@@ -33,15 +33,19 @@ class GameController:
         self.scaling_width = self.width * scaling
         self.scaling_height = self.height * scaling
         # 挑战按钮坐标
-        self.chllg_btn = (round(self.left + self.width * 0.695),
-                          round(self.top + self.height * 0.67),
-                          round(self.left + self.width * 0.785),
-                          round(self.top + self.height * 0.73))
+        # self.chllg_btn = (round(self.left + self.width * 0.695),
+        #                   round(self.top + self.height * 0.67),
+        #                   round(self.left + self.width * 0.785),
+        #                   round(self.top + self.height * 0.73))
+        self.chllg_btn = (round(self.left + self.width * 0.85),
+                          round(self.top + self.height * 0.85),
+                          round(self.left + self.width * 0.94),
+                          round(self.top + self.height * 0.94))
         # 开始战斗按钮坐标
-        self.fght_btn = (round(self.left + self.width * 0.75),
-                         round(self.top + self.height * 0.82),
-                         round(self.left + self.width * 0.87),
-                         round(self.top + self.height * 0.88))
+        self.fght_btn = (round(self.left + self.width * 0.92),
+                         round(self.top + self.height * 0.85),
+                         round(self.left + self.width * 0.98),
+                         round(self.top + self.height * 0.94))
         # 退出战斗按钮采样坐标
         self.exit_btn = (round(self.ltrb[0] + self.scaling_width * 0.014),
                          round(self.ltrb[1] + self.scaling_height * 0.0245),
@@ -70,27 +74,27 @@ class GameController:
                             round(self.ltrb[1] + self.scaling_height * 0.18))
         self.single_hash = '000000000000000000186e1836387ebc7ebc7eb86ed897fc0000ffffffffffff'
         # 组队界面判定采样坐标#
-        self.form_team_intf = (round(self.ltrb[0] + self.scaling_width * 0.12),
-                               round(self.ltrb[1] + self.scaling_height * 0.8),
-                               round(self.ltrb[0] + self.scaling_width * 0.24),
-                               round(self.ltrb[1] + self.scaling_height * 0.88))
+        self.form_team_intf = (round(self.ltrb[0] + self.scaling_width * 0.07),
+                               round(self.ltrb[1] + self.scaling_height * 0.03),
+                               round(self.ltrb[0] + self.scaling_width * 0.18),
+                               round(self.ltrb[1] + self.scaling_height * 0.08))
         # 组队界面判定hash
-        self.form_team_hash = '7ffeffffffffffffcd33cd33c823c923cd93c901e577ffffffff7ffe00000000'
+        self.form_team_hash = '000000000000479c67dc7fdc7fd877d87fdc7fdc7fdc7f5c7fdc7ffc2b380000'
         # 组队栏位1采样坐标
-        self.form_team1 = (round(self.ltrb[0] + self.scaling_width * 0.2),
-                           round(self.ltrb[1] + self.scaling_height * 0.4),
-                           round(self.ltrb[0] + self.scaling_width * 0.28),
-                           round(self.ltrb[1] + self.scaling_height * 0.53))
+        self.form_team1 = (round(self.ltrb[0] + self.scaling_width * 0.08),
+                           round(self.ltrb[1] + self.scaling_height * 0.28),
+                           round(self.ltrb[0] + self.scaling_width * 0.11),
+                           round(self.ltrb[1] + self.scaling_height * 0.38))
         # 组队栏位2采样坐标
-        self.form_team2 = (round(self.ltrb[0] + self.scaling_width * 0.46),
-                           round(self.ltrb[1] + self.scaling_height * 0.4),
-                           round(self.ltrb[0] + self.scaling_width * 0.54),
-                           round(self.ltrb[1] + self.scaling_height * 0.53))
+        self.form_team2 = (round(self.ltrb[0] + self.scaling_width * 0.45),
+                           round(self.ltrb[1] + self.scaling_height * 0.5),
+                           round(self.ltrb[0] + self.scaling_width * 0.55),
+                           round(self.ltrb[1] + self.scaling_height * 0.7))
         # 组队栏位3采样坐标
-        self.form_team3 = (round(self.ltrb[0] + self.scaling_width * 0.76),
-                           round(self.ltrb[1] + self.scaling_height * 0.4),
-                           round(self.ltrb[0] + self.scaling_width * 0.84),
-                           round(self.ltrb[1] + self.scaling_height * 0.53))
+        self.form_team3 = (round(self.ltrb[0] + self.scaling_width * 0.8),
+                           round(self.ltrb[1] + self.scaling_height * 0.5),
+                           round(self.ltrb[0] + self.scaling_width * 0.9),
+                           round(self.ltrb[1] + self.scaling_height * 0.7))
         # 点击屏幕继续字样采样坐标
         self.notice_area = (round(self.ltrb[2] * 0.40),
                             round(self.ltrb[3] * 0.90),
@@ -102,7 +106,12 @@ class GameController:
                            round(self.left + self.width * 0.95),
                            round(self.top + self.height * 0.7))
         # 组队栏位为空时hash
-        self.form_team_blank_hash = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+        self.form_team_blank_hash1 = '003f001fec3fec3f9b3fc13f003f243f3c3f383f363f313f007f007f807f807f'
+        self.form_team_blank_hash2 = 'fff3fff8ffffffffffff1ff707f000a0000000000000ffff0000000000000000'
+        self.form_team_blank_hash3 = 'fffffffffffffe1ff0040000efff001f000400000000ffffffff000000000000'
+
+        self.form_team = [self.form_team1, self.form_team2, self.form_team3]
+        self.form_team_blank_hash = [self.form_team_blank_hash1, self.form_team_blank_hash2, self.form_team_blank_hash3]
 
         # 悬赏界面采样坐标
         self.offer_intf = (round(self.ltrb[0] + self.scaling_width * 0.4),
@@ -117,6 +126,19 @@ class GameController:
         # 悬赏拒绝按钮坐标
         self.denied = (round(self.left + self.width * 0.66),
                        round(self.top + self.height * 0.74))
+
+        # 满仓提示采样坐标
+        self.fullrepo_intf = (round(self.ltrb[0] + self.scaling_width * 0.35),
+                              round(self.ltrb[1] + self.scaling_height * 0.35),
+                              round(self.ltrb[0] + self.scaling_width * 0.65),
+                              round(self.ltrb[1] + self.scaling_height * 0.67))
+
+        # 满仓提示hash
+        self.fullrepo_hash = 'ffff0008000810960004ce7ef81ff81ffffff81ffbdffe5ffa5ff81ff81fffff'
+
+        # 满仓确定按钮坐标
+        self.fullrepo_confirm = (round(self.left + self.width * 0.5),
+                                 round(self.top + self.height * 0.6))
 
         # 状态初始化
         self._running = 1
@@ -188,9 +210,9 @@ class GameController:
         return result, hamming_value
 
     def move_curpos_test(self):
-        self.move_curpos(self.battle_data_button[2], self.battle_data_button[3])
-        catch_img = ImageGrab.grab(self.battle_data_button)
-        catch_img.save('battle_data_button.jpg', 'jpeg')
+        self.move_curpos(self.fullrepo_confirm[0], self.fullrepo_confirm[1])
+        catch_img = ImageGrab.grab(self.fullrepo_intf)
+        catch_img.save('fullrepo_intf.jpg', 'jpeg')
         print(self.get_hash(catch_img))
 
     def form_team_phase(self, mode, fight_num, queue):
@@ -230,15 +252,19 @@ class GameController:
                     self._running = queue.get()
                 if self._running == 1:
                     num = 0
-                    for i in [self.form_team1, self.form_team2, self.form_team3]:
-                        catch_img = ImageGrab.grab(i)
+                    for i in range(1, 3):
+                        print('inin')
+                        print(self.form_team[i])
+                        print(self.form_team_blank_hash[i])
+                        print('in2in2')
+                        catch_img = ImageGrab.grab(self.form_team[i])
                         # self.get_hash(catch_img)
-                        r1, r2 = self.hamming(self.get_hash(catch_img), self.form_team_blank_hash, 10)
+                        r1, r2 = self.hamming(self.get_hash(catch_img), self.form_team_blank_hash[i], 10)
                         if self.debug:
-                            print('%s:%s' % ('form_team_phase', r2))
+                            print('%s:%s' % ('form_team_phase2', r2))
                         if not r1:
                             num = num + 1
-                    if num == fight_num:
+                    if num == fight_num - 1:
                         break
                     time.sleep(0.5)
                 elif self._running == 0:
@@ -309,6 +335,51 @@ class GameController:
         :param queue: 队列对象
         :return:
         """
+        battle_buttun_is_appear = False
+        for rounds in range(0, 20):
+            if not queue.empty():
+                self._running = queue.get()
+            if self._running == 1:
+                # 当出现战斗数据按钮时，则视为进入结算界面
+                catch_img = ImageGrab.grab(self.battle_data_button)
+                r1, r2 = self.hamming(self.get_hash(catch_img), self.battle_data_button_hash, 40)
+                if self.debug:
+                    print('%srounds%s:%s' % ('settle_phase1', rounds, r2))
+                if r1:
+                    battle_buttun_is_appear = True
+                    # 在右侧边缘范围内随机移动鼠标位置，并随机点击1-3次
+                    xrandom = int(random.uniform(0, self.blank_area[2] - self.blank_area[0]))
+                    yrandom = int(random.uniform(0, self.blank_area[3] - self.blank_area[1]))
+                    self.move_curpos(self.blank_area[0] + xrandom, self.blank_area[1] + yrandom)
+                    self.click_left_cur(int(random.uniform(1, 3)))
+                elif not r1:
+                    if battle_buttun_is_appear:
+                        time.sleep(0.5)
+                        break
+                    else:
+                        catch_img = ImageGrab.grab(self.settle_area)
+                        # catch_img.save('%s.jpg' % xx, 'jpeg')
+                        r1, r2 = self.hamming(self.get_hash(catch_img), self.settle_area_hash, 40)
+                        if self.debug:
+                            print('%srounds%s:%s' % ('settle_phase1', rounds, r2))
+                        if r1:
+                            break
+                        else:
+                            # 在右侧边缘范围内随机移动鼠标位置，并随机点击1-3次
+                            xrandom = int(random.uniform(0, self.blank_area[2] - self.blank_area[0]))
+                            yrandom = int(random.uniform(0, self.blank_area[3] - self.blank_area[1]))
+                            self.move_curpos(self.blank_area[0] + xrandom, self.blank_area[1] + yrandom)
+                            self.click_left_cur(int(random.uniform(1, 3)))
+            elif self._running == 0:
+                break
+            time.sleep(round(random.uniform(0.5, 1.0), 2))
+
+    def settle_phase2(self, queue):
+        """
+        战斗结算阶段
+        :param queue: 队列对象
+        :return:
+        """
         for rounds in range(0, 10):
             if not queue.empty():
                 self._running = queue.get()
@@ -351,37 +422,6 @@ class GameController:
                 break
             time.sleep(round(random.uniform(0.5, 1.0), 2))
 
-    def settle_phase_2(self, queue):
-        """
-        战斗结算阶段
-        :param queue: 队列对象
-        :return:
-        """
-        battle_buttun_is_appear = False
-        for rounds in range(0, 20):
-            if not queue.empty():
-                self._running = queue.get()
-            if self._running == 1:
-                # 当出现战斗数据按钮时，则视为进入结算界面
-                catch_img = ImageGrab.grab(self.battle_data_button)
-                r1, r2 = self.hamming(self.get_hash(catch_img), self.battle_data_button_hash, 40)
-                if self.debug:
-                    print('%srounds%s:%s' % ('settle_phase1', rounds, r2))
-                if r1:
-                    battle_buttun_is_appear = True
-                    # 在右侧边缘范围内随机移动鼠标位置，并随机点击1-3次
-                    xrandom = int(random.uniform(0, self.blank_area[2] - self.blank_area[0]))
-                    yrandom = int(random.uniform(0, self.blank_area[3] - self.blank_area[1]))
-                    self.move_curpos(self.blank_area[0] + xrandom, self.blank_area[1] + yrandom)
-                    self.click_left_cur(int(random.uniform(1, 3)))
-                elif not r1:
-                    if battle_buttun_is_appear:
-                        time.sleep(0.5)
-                        break
-            elif self._running == 0:
-                break
-            time.sleep(round(random.uniform(0.5, 1.0), 2))
-
     def check_offer(self, offer_mode, queue):
         """
         处理悬赏协助询问
@@ -400,6 +440,25 @@ class GameController:
                         self.move_curpos(self.accept[0], self.accept[1])
                     elif offer_mode == "拒绝":
                         self.move_curpos(self.denied[0], self.denied[1])
+                    self.click_left_cur()
+                time.sleep(1.3)
+            elif self._running == 0:
+                return
+
+    def check_fullrepo_alert(self, queue):
+        """
+        处理满仓提示
+        :param queue: 队列对象
+        :return:
+        """
+        while True:
+            if not queue.empty():
+                self._running = queue.get()
+            if self._running == 1:
+                catch_img = ImageGrab.grab(self.fullrepo_intf)
+                r1, r2 = self.hamming(self.get_hash(catch_img), self.fullrepo_hash, 30)
+                if r1:
+                    self.move_curpos(self.fullrepo_confirm[0], self.fullrepo_confirm[1])
                     self.click_left_cur()
                 time.sleep(1.3)
             elif self._running == 0:

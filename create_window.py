@@ -12,7 +12,8 @@ import random
 import shelve
 import threading
 from queue import Queue
-import win32gui, win32con, win32com.client
+import win32gui, win32con, win32com.client, ctypes
+import ctypes.wintypes
 from PIL import Image as PLI_Image, ImageTk
 from tkinter import *
 from tkinter import ttk
@@ -125,7 +126,7 @@ class Application(Frame):
             return False
 
     @staticmethod
-    def init_window_place(root, x, y):
+    def init_window_position(root, x, y):
         """
         初始化窗口位置
         :param root: 顶层窗体
@@ -294,6 +295,26 @@ class Application(Frame):
             self.var_done_action_mode.set('')
             self.listbox_done_action_mode.configure(state='disabled')
 
+    def turn_all_widget_off(self):
+        self.entry_scaling.configure(state='disabled')
+        self.entry_clear_time.configure(state='disabled')
+        self.entry_delay_time.configure(state='disabled')
+        self.entry_timing_value.configure(state='disabled')
+        self.listbox_mode.configure(state='disabled')
+        self.listbox_offer_mode.configure(state='disabled')
+        self.listbox_timing_mode.configure(state='disabled')
+        self.listbox_done_action_mode.configure(state='disabled')
+
+    def turn_all_widget_on(self):
+        self.entry_scaling.configure(state='normal')
+        self.entry_clear_time.configure(state='normal')
+        self.entry_delay_time.configure(state='normal')
+        self.entry_timing_value.configure(state='normal')
+        self.listbox_mode.configure(state='normal')
+        self.listbox_offer_mode.configure(state='normal')
+        self.listbox_timing_mode.configure(state='normal')
+        self.listbox_done_action_mode.configure(state='normal')
+
     def fight_start(self):
         """
         START按钮响应流程
@@ -328,6 +349,8 @@ class Application(Frame):
             self.fight.setdebug(True)
         thread1 = threading.Thread(target=self.fight_thread, name='fight_thread')
         thread2 = threading.Thread(target=self.offer_thread, name='offer_thread')
+        thread3 = threading.Thread(target=self.fullrepo_thread, name='fullrepo_thread')
+        thread4 = threading.Thread(target=self.hotkey_thread, name='hotkey_thread')
         # 将线程状态、队列内容置为1
         self._running = 1
         if self.queue.empty():
@@ -337,8 +360,14 @@ class Application(Frame):
             self.queue.put(1)
         self.start_ctn.configure(state='disabled')
         self.stop_ctn.configure(state='active')
+        thread1.setDaemon(True)
         thread1.start()
+        thread2.setDaemon(True)
         thread2.start()
+        thread3.setDaemon(True)
+        thread3.start()
+        thread4.setDaemon(True)
+        thread4.start()
 
     def fight_stop(self):
         """
@@ -350,6 +379,7 @@ class Application(Frame):
         self.queue.put(0)
         self.start_ctn.configure(state='active')
         self.stop_ctn.configure(state='disabled')
+        self.turn_all_widget_on()
         var = '[%s]挂机结束。记得关御魂buff' % datetime.datetime.now().strftime("%H:%M:%S")
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(var) + '\n')
@@ -363,30 +393,28 @@ class Application(Frame):
         self.jump_window()
         if not self.queue.empty():
             self.queue.get()
-        # if self.debug:
-        #     self.fight.move_curpos_test()
-        #     self.fight_stop()
-        #     return
+        if self.debug:
+            self.fight.move_curpos_test()
+            self.fight_stop()
+            return
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(self.warning) + '\n', 'RED')
         self.info_box.tag_config('RED', foreground='red')
-        var = '[%s]挂机开始' % datetime.datetime.now().strftime("%H:%M:%S")
+        var = '[%s]挂机开始。按Ctrl + F1可以停止挂机' % datetime.datetime.now().strftime("%H:%M:%S")
+        self.turn_all_widget_off()
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(var) + '\n')
         self.info_box.see(END)
         rounds = 0
         total_time = 0
-        beginning_timg = time.clock()
+        beginning_timg = time.process_time()
         while True:
             if self._running == 1:
-                # self.fight.move_curpos_test()
-                # self.fight_stop()
-                # time.sleep(5)
-                fight_start_time = time.clock()
+                fight_start_time = time.process_time()
                 self.fight.form_team_phase(self.listbox_mode.get(), self.var_member.get(), self.queue)
                 self.fight.wait_fight_finish_phase(self.listbox_mode.get(), self.clear_time, self.queue)
                 self.jump_window()
-                self.fight.settle_phase_2(self.queue)
+                self.fight.settle_phase2(self.queue)
                 if self._running == 1:
                     fight_end_time = time.clock()
                     fight_time = fight_end_time - fight_start_time
@@ -431,6 +459,41 @@ class Application(Frame):
             if self._running == 1:
                 self.fight.check_offer(self.listbox_offer_mode.get(), self.queue)
             elif self._running == 0:
+                return
+
+    def fullrepo_thread(self):
+        """
+        点击满仓提示控制线程
+        :return:
+        """
+        while True:
+            if self._running == 1:
+                self.fight.check_fullrepo_alert(self.queue)
+            elif self._running == 0:
+                return
+
+    def hotkey_thread(self):
+        """
+        快捷键监听线程
+        :return:
+        """
+        user32 = ctypes.windll.user32
+        msg = ctypes.wintypes.MSG()
+        byref = ctypes.byref
+        user32.RegisterHotKey(None, 10001, win32con.MOD_CONTROL, win32con.VK_F1)
+        while user32.GetMessageA(byref(msg), None, 0, 0) != 0:
+            if self._running == 1:
+                try:
+                    if msg.message == win32con.WM_HOTKEY:
+                        self.fight_stop()
+                        # user32.UnregisterHotKey(None, 10001)
+                        return
+                    user32.TranslateMessage(byref(msg))
+                    user32.DispatchMessageA(byref(msg))
+                finally:
+                    user32.UnregisterHotKey(None, 10001)
+            elif self._running == 0:
+                user32.UnregisterHotKey(None, 10001)
                 return
 
     @staticmethod
@@ -483,7 +546,7 @@ class Application(Frame):
         img_win7.image = render
         img_win7.grid(row=1, column=1)
 
-        self.init_window_place(what_is_scaling, 1.3, 3)
+        self.init_window_position(what_is_scaling, 1.3, 3)
 
     def when_click_start_window(self):
         when_click_start = Toplevel(self)
@@ -549,7 +612,7 @@ class Application(Frame):
             img2.image = render
             img2.pack()
 
-        self.init_window_place(when_click_start, 1.3, 3)
+        self.init_window_position(when_click_start, 1.3, 3)
 
     def what_is_clear_time(self):
         what_is_clear = Toplevel(self)
@@ -564,7 +627,7 @@ class Application(Frame):
                        '\n如果设置一个较短的时间也可以，不过设置一个合理的时间，能节省你CPU资源\n（其实也没占多少_(:3」∠)_\n'
         desc['width'] = 300
         desc.pack()
-        self.init_window_place(what_is_clear, 1.3, 3)
+        self.init_window_position(what_is_clear, 1.3, 3)
 
     def what_is_delay_time(self):
         what_is_delay = Toplevel(self)
@@ -578,7 +641,7 @@ class Application(Frame):
                        '\n填入的时间还会加上一个300毫秒以内的随机时间\n'
         desc['width'] = 300
         desc.pack()
-        self.init_window_place(what_is_delay, 1.3, 3)
+        self.init_window_position(what_is_delay, 1.3, 3)
 
     def create_main(self):
         """
@@ -702,7 +765,7 @@ class Application(Frame):
         self.info_box['height'] = 20
         self.info_box.grid(row=1, column=0, columnspan=2)
         self.info_box.see(END)
-        var = 'Build 20190421'
+        var = 'Build 20191216'
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(var) + '\n')
         self.info_box.see(END)

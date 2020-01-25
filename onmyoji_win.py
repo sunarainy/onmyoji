@@ -18,5 +18,5 @@ else:
         windll.user32.ShowWindow(whnd, 0)
         windll.kernel32.CloseHandle(whnd)
 app.master.title('就你破势多')
-app.init_window_place(app.master, 1.1, 4)
+app.init_window_position(app.master, 1.1, 4)
 app.mainloop()
