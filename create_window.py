@@ -14,6 +14,8 @@ import threading
 from queue import Queue
 import win32gui, win32con, win32com.client, ctypes
 import ctypes.wintypes
+import psutil
+import win32process
 from PIL import Image as PLI_Image, ImageTk
 from tkinter import *
 from tkinter import ttk
@@ -112,13 +114,42 @@ class Application(Frame):
         self.debug = debug
 
     @staticmethod
-    def check_hwnd(label):
+    def get_hwnds(pid):
+        """
+        return a list of window handlers based on it process id
+        :param pid: process id
+        :return: list of hwnds
+        """
+
+        def callback(hwnd, hwnds):
+            if win32gui.IsWindowVisible(hwnd) and win32gui.IsWindowEnabled(hwnd):
+                _, found_pid = win32process.GetWindowThreadProcessId(hwnd)
+                if found_pid == pid:
+                    hwnds.append(hwnd)
+            return True
+
+        hwnd_list = []
+        win32gui.EnumWindows(callback, hwnd_list)
+        return hwnd_list
+
+    # @staticmethod
+    def check_hwnd(self, label):
         """
         获取游戏窗口句柄
         :param label: 游戏窗口title
         :return: 游戏窗口存在则返回句柄对象，不存在则返回False
         """
-        hwnd = win32gui.FindWindow(None, label)
+        # hwnd = win32gui.FindWindow(None, label)
+        print(label)
+        process = psutil.process_iter()
+        p = None
+        for i in process:
+            if i.name() == 'onmyoji.exe':
+                p = i.pid
+        if len(self.get_hwnds(p)) > 0:
+            hwnd = self.get_hwnds(p)[0]
+        else:
+            hwnd = None
         if hwnd:
             return hwnd
         else:
@@ -393,10 +424,10 @@ class Application(Frame):
         self.jump_window()
         if not self.queue.empty():
             self.queue.get()
-        if self.debug:
-            self.fight.move_curpos_test()
-            self.fight_stop()
-            return
+        # if self.debug:
+        #     self.fight.move_curpos_test()
+        #     self.fight_stop()
+        #     return
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(self.warning) + '\n', 'RED')
         self.info_box.tag_config('RED', foreground='red')
@@ -407,21 +438,21 @@ class Application(Frame):
         self.info_box.see(END)
         rounds = 0
         total_time = 0
-        beginning_timg = time.process_time()
+        beginning_time = int(time.time())
         while True:
             if self._running == 1:
-                fight_start_time = time.process_time()
+                fight_start_time = time.time()
                 self.fight.form_team_phase(self.listbox_mode.get(), self.var_member.get(), self.queue)
                 self.fight.wait_fight_finish_phase(self.listbox_mode.get(), self.clear_time, self.queue)
                 self.jump_window()
-                self.fight.settle_phase2(self.queue)
+                self.fight.settle_phase(self.queue)
                 if self._running == 1:
-                    fight_end_time = time.clock()
+                    fight_end_time = int(time.time())
                     fight_time = fight_end_time - fight_start_time
                     # time.sleep(0.5)
                     rounds = rounds + 1
                     total_time = total_time + fight_time
-                    elapsed_time = fight_end_time - beginning_timg
+                    elapsed_time = fight_end_time - beginning_time
                     var = '第 %s 场 耗时：%s 共计：%s' % \
                           (rounds, self.time_format(fight_time), self.time_format(elapsed_time))
                     self.info_box.mark_set('insert', END)
@@ -765,7 +796,7 @@ class Application(Frame):
         self.info_box['height'] = 20
         self.info_box.grid(row=1, column=0, columnspan=2)
         self.info_box.see(END)
-        var = 'Build 20200125'
+        var = 'Build 20200202'
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(var) + '\n')
         self.info_box.see(END)

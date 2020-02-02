@@ -354,72 +354,50 @@ class GameController:
                     self.click_left_cur(int(random.uniform(1, 3)))
                 elif not r1:
                     if battle_buttun_is_appear:
-                        time.sleep(0.5)
+                        time.sleep(2)
                         break
                     else:
-                        catch_img = ImageGrab.grab(self.settle_area)
-                        # catch_img.save('%s.jpg' % xx, 'jpeg')
-                        r1, r2 = self.hamming(self.get_hash(catch_img), self.settle_area_hash, 40)
-                        if self.debug:
-                            print('%srounds%s:%s' % ('settle_phase1', rounds, r2))
-                        if r1:
-                            break
-                        else:
-                            # 在右侧边缘范围内随机移动鼠标位置，并随机点击1-3次
-                            xrandom = int(random.uniform(0, self.blank_area[2] - self.blank_area[0]))
-                            yrandom = int(random.uniform(0, self.blank_area[3] - self.blank_area[1]))
-                            self.move_curpos(self.blank_area[0] + xrandom, self.blank_area[1] + yrandom)
-                            self.click_left_cur(int(random.uniform(1, 3)))
+                        self.special_settle_phase()
+                        break
             elif self._running == 0:
                 break
             time.sleep(round(random.uniform(0.5, 1.0), 2))
 
-    def settle_phase2(self, queue):
+    def special_settle_phase(self):
         """
-        战斗结算阶段
-        :param queue: 队列对象
+        没有战斗数据按钮的结算流程
         :return:
         """
         for rounds in range(0, 10):
-            if not queue.empty():
-                self._running = queue.get()
-            if self._running == 1:
-                # 当镜头旋转结束，出现结算达摩，则视为进入结算界面
-                catch_img = ImageGrab.grab(self.settle_area)
-                # catch_img.save('%s.jpg' % xx, 'jpeg')
-                r1, r2 = self.hamming(self.get_hash(catch_img), self.settle_area_hash, 40)
-                if self.debug:
-                    print('%srounds%s:%s' % ('settle_phase1', rounds, r2))
-                if r1:
-                    break
-                else:
-                    # 在右侧边缘范围内随机移动鼠标位置，并随机点击1-3次
-                    xrandom = int(random.uniform(0, self.blank_area[2] - self.blank_area[0]))
-                    yrandom = int(random.uniform(0, self.blank_area[3] - self.blank_area[1]))
-                    self.move_curpos(self.blank_area[0] + xrandom, self.blank_area[1] + yrandom)
-                    self.click_left_cur(int(random.uniform(1, 3)))
-            elif self._running == 0:
+            # 当镜头旋转结束，出现结算达摩，则视为进入结算界面
+            catch_img = ImageGrab.grab(self.settle_area)
+            # catch_img.save('%s.jpg' % xx, 'jpeg')
+            r1, r2 = self.hamming(self.get_hash(catch_img), self.settle_area_hash, 40)
+            if self.debug:
+                print('%srounds%s:%s' % ('special_settle_phase', rounds, r2))
+            if r1:
                 break
-            time.sleep(round(random.uniform(1, 1.5), 2))
+            else:
+                # 在右侧边缘范围内随机移动鼠标位置，并随机点击1-3次
+                xrandom = int(random.uniform(0, self.blank_area[2] - self.blank_area[0]))
+                yrandom = int(random.uniform(0, self.blank_area[3] - self.blank_area[1]))
+                self.move_curpos(self.blank_area[0] + xrandom, self.blank_area[1] + yrandom)
+                self.click_left_cur(int(random.uniform(1, 3)))
+            time.sleep(round(random.uniform(0.5, 1.0), 2))
         for rounds in range(0, 10):
-            if not queue.empty():
-                self._running = queue.get()
-            if self._running == 1:
-                catch_img = ImageGrab.grab(self.settle_area)
-                # 当结算达摩消失时，视为结算结束
-                r1, r2 = self.hamming(self.get_hash(catch_img), self.settle_area_hash, 40)
-                if self.debug:
-                    print('%srounds%s:%s' % ('settle_phase2', rounds, r2))
-                if not r1:
-                    break
-                else:
-                    # 在右侧边缘范围内随机移动鼠标位置，并随机点击1-3次，直到结算结束
-                    xrandom = int(random.uniform(0, self.blank_area[2] - self.blank_area[0]))
-                    yrandom = int(random.uniform(0, self.blank_area[3] - self.blank_area[1]))
-                    self.move_curpos(self.blank_area[0] + xrandom, self.blank_area[1] + yrandom)
-                    self.click_left_cur(int(random.uniform(1, 3)))
-            elif self._running == 0:
+            catch_img = ImageGrab.grab(self.settle_area)
+            # 当结算达摩消失时，视为结算结束
+            r1, r2 = self.hamming(self.get_hash(catch_img), self.settle_area_hash, 40)
+            if self.debug:
+                print('%srounds%s:%s' % ('special_settle_phase', rounds, r2))
+            if not r1:
                 break
+            else:
+                # 在右侧边缘范围内随机移动鼠标位置，并随机点击1-3次，直到结算结束
+                xrandom = int(random.uniform(0, self.blank_area[2] - self.blank_area[0]))
+                yrandom = int(random.uniform(0, self.blank_area[3] - self.blank_area[1]))
+                self.move_curpos(self.blank_area[0] + xrandom, self.blank_area[1] + yrandom)
+                self.click_left_cur(int(random.uniform(1, 3)))
             time.sleep(round(random.uniform(0.5, 1.0), 2))
 
     def check_offer(self, offer_mode, queue):
