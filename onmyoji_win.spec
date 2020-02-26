@@ -18,7 +18,8 @@ a.datas += [('image/win10.png', '.\\image\\win10.png',  'DATA'),
 ('image/single.png', '.\\image\\single.png',  'DATA'),
 ('image/passenger_accept.png', '.\\image\\passenger_accept.png',  'DATA'),
 ('image/driver_invite.png', '.\\image\\driver_invite.png',  'DATA'),
-('image/driver_form.png', '.\\image\\driver_form.png',  'DATA')] 
+('image/driver_form.png', '.\\image\\driver_form.png',  'DATA'),
+('senbonzakura.mid', '.\\senbonzakura.mid',  'DATA')]
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,

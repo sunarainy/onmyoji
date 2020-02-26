@@ -6,9 +6,12 @@
 
 import time
 import random
-import win32api, win32gui, win32con
+import win32api
+import win32gui
+import win32con
 from ctypes import *
 from PIL import ImageGrab, Image as PLI_Image
+from utilities import logging
 
 
 class GameController:
@@ -140,6 +143,20 @@ class GameController:
         self.fullrepo_confirm = (round(self.left + self.width * 0.5),
                                  round(self.top + self.height * 0.6))
 
+        # 超鬼王提示采样坐标
+        self.boss_notice = (round(self.ltrb[0] + self.scaling_width * 0.03),
+                            round(self.ltrb[1] + self.scaling_height * 0.379),
+                            round(self.ltrb[0] + self.scaling_width * 0.11),
+                            round(self.ltrb[1] + self.scaling_height * 0.422))
+
+        # 超鬼王提示hash
+        self.boss_notice_hash1 = '031803380331033502190608074e07ff07ff07ff07ff07ff0fff0fff0fff1fff'
+        self.boss_notice_hash2 = '03ff03ff03bf073f07370731073107330731071107310f310f150e590fff1fff'
+
+        # 超鬼王按钮坐标
+        self.boss_notice_button = (round(self.left + self.width * 0.1),
+                                   round(self.top + self.height * 0.37))
+
         # 状态初始化
         self._running = 1
 
@@ -225,6 +242,8 @@ class GameController:
         """
         if mode == '单刷':
             # 移动到挑战按钮并点击 每次移动在按钮范围内加入随机坐标位移
+            if self.debug:
+                logging('[%s]%s' % ('form_team_phase', mode))
             xrandom = int(random.uniform(0, self.chllg_btn[2] - self.chllg_btn[0]))
             yrandom = int(random.uniform(0, self.chllg_btn[3] - self.chllg_btn[1]))
             self.move_curpos(self.chllg_btn[0] + xrandom, self.chllg_btn[1] + yrandom)
@@ -238,9 +257,10 @@ class GameController:
                     self._running = queue.get()
                 if self._running == 1:
                     catch_img = ImageGrab.grab(self.form_team_intf)
-                    r1, r2 = self.hamming(self.get_hash(catch_img), self.form_team_hash, 30)
+                    img_hash = self.get_hash(catch_img)
+                    r1, r2 = self.hamming(img_hash, self.form_team_hash, 30)
                     if self.debug:
-                        print('%s:%s' % ('form_team_phase', r2))
+                        logging('[%s]%s %s:%s:%s' % ('form_team_phase1', mode, img_hash, r1, r2))
                     if r1:
                         break
                     time.sleep(0.5)
@@ -253,15 +273,11 @@ class GameController:
                 if self._running == 1:
                     num = 0
                     for i in range(1, 3):
-                        print('inin')
-                        print(self.form_team[i])
-                        print(self.form_team_blank_hash[i])
-                        print('in2in2')
                         catch_img = ImageGrab.grab(self.form_team[i])
-                        # self.get_hash(catch_img)
-                        r1, r2 = self.hamming(self.get_hash(catch_img), self.form_team_blank_hash[i], 10)
+                        img_hash = self.get_hash(catch_img)
+                        r1, r2 = self.hamming(img_hash, self.form_team_blank_hash[i], 10)
                         if self.debug:
-                            print('%s:%s' % ('form_team_phase2', r2))
+                            logging('[%s]%s %s:%s:%s' % ('form_team_phase2', mode, img_hash, r1, r2))
                         if not r1:
                             num = num + 1
                     if num == fight_num - 1:
@@ -282,9 +298,10 @@ class GameController:
                     self._running = queue.get()
                 if self._running == 1:
                     catch_img = ImageGrab.grab(self.exit_btn)
-                    r1, r2 = self.hamming(self.get_hash(catch_img), self.exit_btn_hash, 30)
+                    img_hash = self.get_hash(catch_img)
+                    r1, r2 = self.hamming(img_hash, self.exit_btn_hash, 30)
                     if self.debug:
-                        print('%s:%s' % ('form_team_phase', r2))
+                        logging('[%s]%s %s:%s:%s' % ('form_team_phase', mode, img_hash, r1, r2))
                     if r1:
                         break
                     time.sleep(0.5)
@@ -308,7 +325,6 @@ class GameController:
             if self._running == 1:
                 time.sleep(1)
                 t = t + 1
-                # print(t)
             elif self._running == 0:
                 break
         while True:
@@ -316,11 +332,11 @@ class GameController:
                 self._running = queue.get()
             if self._running == 1:
                 catch_img = ImageGrab.grab(self.exit_btn)
-                # catch_img.save('fight.jpg', 'jpeg')
+                img_hash = self.get_hash(catch_img)
                 # 当退出战斗按钮消失时，视为战斗结束
-                r1, r2 = self.hamming(self.get_hash(catch_img), self.exit_btn_hash, 30)
+                r1, r2 = self.hamming(img_hash, self.exit_btn_hash, 30)
                 if self.debug:
-                    print('%s:%s' % ('wait_fight_finish_phase', r2))
+                    logging('[%s]%s %s:%s:%s' % ('wait_fight_finish_phase', mode, img_hash, r1, r2))
                 if r1:
                     pass
                 else:
@@ -336,15 +352,16 @@ class GameController:
         :return:
         """
         battle_buttun_is_appear = False
-        for rounds in range(0, 20):
+        for battle_round in range(0, 20):
             if not queue.empty():
                 self._running = queue.get()
             if self._running == 1:
                 # 当出现战斗数据按钮时，则视为进入结算界面
                 catch_img = ImageGrab.grab(self.battle_data_button)
-                r1, r2 = self.hamming(self.get_hash(catch_img), self.battle_data_button_hash, 40)
+                img_hash = self.get_hash(catch_img)
+                r1, r2 = self.hamming(img_hash, self.battle_data_button_hash, 40)
                 if self.debug:
-                    print('%srounds%s:%s' % ('settle_phase1', rounds, r2))
+                    logging('[%s]round%s %s:%s:%s' % ('settle_phase', battle_round, img_hash, r1, r2))
                 if r1:
                     battle_buttun_is_appear = True
                     # 在右侧边缘范围内随机移动鼠标位置，并随机点击1-3次
@@ -368,13 +385,13 @@ class GameController:
         没有战斗数据按钮的结算流程
         :return:
         """
-        for rounds in range(0, 10):
+        for battle_round in range(0, 10):
             # 当镜头旋转结束，出现结算达摩，则视为进入结算界面
             catch_img = ImageGrab.grab(self.settle_area)
-            # catch_img.save('%s.jpg' % xx, 'jpeg')
-            r1, r2 = self.hamming(self.get_hash(catch_img), self.settle_area_hash, 40)
+            img_hash = self.get_hash(catch_img)
+            r1, r2 = self.hamming(img_hash, self.settle_area_hash, 40)
             if self.debug:
-                print('%srounds%s:%s' % ('special_settle_phase', rounds, r2))
+                logging('[%s]round%s %s:%s:%s' % ('special_settle_phase1', battle_round, img_hash, r1, r2))
             if r1:
                 break
             else:
@@ -384,12 +401,13 @@ class GameController:
                 self.move_curpos(self.blank_area[0] + xrandom, self.blank_area[1] + yrandom)
                 self.click_left_cur(int(random.uniform(1, 3)))
             time.sleep(round(random.uniform(0.5, 1.0), 2))
-        for rounds in range(0, 10):
+        for battle_round in range(0, 10):
             catch_img = ImageGrab.grab(self.settle_area)
+            img_hash = self.get_hash(catch_img)
             # 当结算达摩消失时，视为结算结束
-            r1, r2 = self.hamming(self.get_hash(catch_img), self.settle_area_hash, 40)
+            r1, r2 = self.hamming(img_hash, self.settle_area_hash, 40)
             if self.debug:
-                print('%srounds%s:%s' % ('special_settle_phase', rounds, r2))
+                logging('[%s]round%s %s:%s:%s' % ('special_settle_phase2', battle_round, img_hash, r1, r2))
             if not r1:
                 break
             else:
@@ -439,5 +457,39 @@ class GameController:
                     self.move_curpos(self.fullrepo_confirm[0], self.fullrepo_confirm[1])
                     self.click_left_cur()
                 time.sleep(1.3)
+            elif self._running == 0:
+                return
+
+    def click_boss_notice(self, mode, queue):
+        """
+        点击发现超鬼王提示
+        :param mode:
+        :param queue: 队列对象
+        :return:
+        """
+        num = 1
+        while True:
+            if not queue.empty():
+                self._running = queue.get()
+            if self._running == 1:
+                catch_img = ImageGrab.grab(self.boss_notice)
+                img_hash = self.get_hash(catch_img)
+                num += 1
+                r1 = False
+                if mode == 1:
+                    r1, r2 = self.hamming(img_hash, self.boss_notice_hash1, 15)
+                    if self.debug:
+                        logging('%s boss %s:%s:%s' % (num, img_hash, r1, r2))
+                elif mode == 2:
+                    r11, r21 = self.hamming(img_hash, self.boss_notice_hash1, 15)
+                    r21, r22 = self.hamming(img_hash, self.boss_notice_hash2, 15)
+                    if r11 or r21:
+                        r1 = True
+                if r1:
+                    queue.put(0)
+                    self.move_curpos(self.boss_notice_button[0], self.boss_notice_button[1])
+                    self.click_left_cur(2)
+                    return
+                time.sleep(1)
             elif self._running == 0:
                 return

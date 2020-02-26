@@ -6,13 +6,14 @@
 """
 
 import time
-import datetime
-import os
 import random
 import shelve
 import threading
 from queue import Queue
-import win32gui, win32con, win32com.client, ctypes
+import win32gui
+import win32con
+import ctypes
+# import win32com.client
 import ctypes.wintypes
 import psutil
 import win32process
@@ -22,6 +23,7 @@ from tkinter import ttk
 import tkinter.messagebox as messagebox
 from tkinter.scrolledtext import ScrolledText
 from game_controller import GameController
+from utilities import *
 
 
 class Application(Frame):
@@ -107,8 +109,12 @@ class Application(Frame):
         self.info_box = ScrolledText(self.frame2)
 
         self.queue = Queue(maxsize=1)
-        self._running = 1
+        self._running = 0
         self.create_main()
+
+        hot_key = threading.Thread(target=self.hotkey_thread, name='hotkey_thread')
+        hot_key.setDaemon(True)
+        hot_key.start()
 
     def setdebug(self, debug):
         self.debug = debug
@@ -140,6 +146,7 @@ class Application(Frame):
         :return: 游戏窗口存在则返回句柄对象，不存在则返回False
         """
         # hwnd = win32gui.FindWindow(None, label)
+        # return hwnd
         print(label)
         process = psutil.process_iter()
         p = None
@@ -153,8 +160,12 @@ class Application(Frame):
         if hwnd:
             return hwnd
         else:
-            print('游戏没有运行')
-            return False
+            hwnd = win32gui.FindWindow(None, label)
+            if hwnd:
+                return hwnd
+            else:
+                print('游戏没有运行')
+                return False
 
     @staticmethod
     def init_window_position(root, x, y):
@@ -236,7 +247,9 @@ class Application(Frame):
         校验预定结束输入值
         :return: 校验通过则返回浮点型数字，否则返回False
         """
-        if self.listbox_timing_mode.get() == '无':
+        if self.listbox_timing_mode.get() == '无' or \
+           self.listbox_timing_mode.get() == '超鬼王模式1' or \
+           self.listbox_timing_mode.get() == '超鬼王模式2':
             return True
         var = self.var_timing_value.get()
         try:
@@ -321,6 +334,22 @@ class Application(Frame):
             self.entry_timing_value.configure(state='normal')
             self.listbox_done_action_mode.configure(state='normal')
             self.var_done_action_mode.set('关闭游戏窗口')
+        elif var == '超鬼王模式1':
+            self.entry_timing_value.configure(state='disabled')
+            self.listbox_done_action_mode.configure(state='normal')
+            self.var_done_action_mode.set('仅停止挂机')
+            content = '\n超鬼王模式1：\n仅自己发现的鬼王\n'
+            self.info_box.mark_set('insert', END)
+            self.info_box.insert('insert', str(content) + '\n')
+            self.info_box.see(END)
+        elif var == '超鬼王模式2':
+            self.entry_timing_value.configure(state='disabled')
+            self.listbox_done_action_mode.configure(state='normal')
+            self.var_done_action_mode.set('仅停止挂机')
+            content = '\n超鬼王模式2：\n自己发现的鬼王或好友邀请的鬼王\n'
+            self.info_box.mark_set('insert', END)
+            self.info_box.insert('insert', str(content) + '\n')
+            self.info_box.see(END)
         else:
             self.entry_timing_value.configure(state='disabled')
             self.var_done_action_mode.set('')
@@ -370,7 +399,7 @@ class Application(Frame):
         if not self.hwnd:
             messagebox.showinfo(title='提示', message='游戏没有运行')
             return False
-        self.shell = win32com.client.Dispatch("WScript.Shell")
+        # self.shell = win32com.client.Dispatch("WScript.Shell")
         # self.shell.SendKeys('%')
 
         self.jump_window()
@@ -378,10 +407,16 @@ class Application(Frame):
         self.fight = GameController(self.hwnd, self.scaling)
         if self.debug:
             self.fight.setdebug(True)
+        threads = []
         thread1 = threading.Thread(target=self.fight_thread, name='fight_thread')
+        threads.append(thread1)
         thread2 = threading.Thread(target=self.offer_thread, name='offer_thread')
+        threads.append(thread2)
         thread3 = threading.Thread(target=self.fullrepo_thread, name='fullrepo_thread')
-        thread4 = threading.Thread(target=self.hotkey_thread, name='hotkey_thread')
+        threads.append(thread3)
+        if self.listbox_timing_mode.get() == '超鬼王模式1' or self.listbox_timing_mode.get() == '超鬼王模式2':
+            thread4 = threading.Thread(target=self.boss_monitoring_thread, name='boss_thread')
+            threads.append(thread4)
         # 将线程状态、队列内容置为1
         self._running = 1
         if self.queue.empty():
@@ -391,14 +426,9 @@ class Application(Frame):
             self.queue.put(1)
         self.start_ctn.configure(state='disabled')
         self.stop_ctn.configure(state='active')
-        thread1.setDaemon(True)
-        thread1.start()
-        thread2.setDaemon(True)
-        thread2.start()
-        thread3.setDaemon(True)
-        thread3.start()
-        thread4.setDaemon(True)
-        thread4.start()
+        for thread in threads:
+            thread.setDaemon(True)
+            thread.start()
 
     def fight_stop(self):
         """
@@ -415,6 +445,10 @@ class Application(Frame):
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(var) + '\n')
         self.info_box.see(END)
+        if self.debug:
+            logging('STOP指令-----------------')
+        if len(sys.argv) == 1 or (len(sys.argv) > 1 and sys.argv[1] != 'debug'):
+            self.setdebug(False)
 
     def fight_thread(self):
         """
@@ -424,14 +458,12 @@ class Application(Frame):
         self.jump_window()
         if not self.queue.empty():
             self.queue.get()
-        # if self.debug:
-        #     self.fight.move_curpos_test()
-        #     self.fight_stop()
-        #     return
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(self.warning) + '\n', 'RED')
         self.info_box.tag_config('RED', foreground='red')
         var = '[%s]挂机开始。按Ctrl + F1可以停止挂机' % datetime.datetime.now().strftime("%H:%M:%S")
+        if self.debug:
+            var = var + '\n当前以debug模式运行，在当前目录下将生成debug.log'
         self.turn_all_widget_off()
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(var) + '\n')
@@ -449,7 +481,6 @@ class Application(Frame):
                 if self._running == 1:
                     fight_end_time = int(time.time())
                     fight_time = fight_end_time - fight_start_time
-                    # time.sleep(0.5)
                     rounds = rounds + 1
                     total_time = total_time + fight_time
                     elapsed_time = fight_end_time - beginning_time
@@ -458,6 +489,8 @@ class Application(Frame):
                     self.info_box.mark_set('insert', END)
                     self.info_box.insert('insert', str(var) + '\n')
                     self.info_box.see(END)
+                    if self.debug:
+                        logging('------------------------')
                     # 检查是否到达预定结束场数或时间
                     if (self.listbox_timing_mode.get() == '场数' and rounds >= self.timing_value) or \
                        (self.listbox_timing_mode.get() == '定时[分钟]' and elapsed_time / 60 >= self.timing_value):
@@ -509,29 +542,47 @@ class Application(Frame):
         :return:
         """
         user32 = ctypes.windll.user32
-        msg = ctypes.wintypes.MSG()
         byref = ctypes.byref
         user32.RegisterHotKey(None, 10001, win32con.MOD_CONTROL, win32con.VK_F1)
-        while user32.GetMessageA(byref(msg), None, 0, 0) != 0:
-            if self._running == 1:
-                try:
-                    if msg.message == win32con.WM_HOTKEY:
-                        self.fight_stop()
-                        # user32.UnregisterHotKey(None, 10001)
-                        return
-                    user32.TranslateMessage(byref(msg))
-                    user32.DispatchMessageA(byref(msg))
-                finally:
-                    user32.UnregisterHotKey(None, 10001)
-            elif self._running == 0:
-                user32.UnregisterHotKey(None, 10001)
-                return
+        user32.RegisterHotKey(None, 10002, win32con.MOD_CONTROL, win32con.VK_F2)
 
-    @staticmethod
-    def resource_path(relative_path):
-        """ Get absolute path to resource, works for dev and for PyInstaller """
-        base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-        return os.path.join(base_path, relative_path)
+        try:
+            msg = ctypes.wintypes.MSG()
+            while user32.GetMessageA(byref(msg), None, 0, 0) != 0:
+                if msg.message == win32con.WM_HOTKEY:
+                    if self._running == 1 and msg.wParam == 10001:
+                        self.fight_stop()
+                    elif self._running == 0 and msg.wParam == 10002:
+                        self.setdebug(True)
+                        self.fight_start()
+                user32.TranslateMessage(byref(msg))
+                user32.DispatchMessageA(byref(msg))
+        finally:
+            user32.UnregisterHotKey(None, 10001)
+            user32.UnregisterHotKey(None, 10002)
+
+    def boss_monitoring_thread(self):
+        """
+        点击发现超鬼王提示控制线程
+        :return: 
+        """""
+        mode = None
+        if self.listbox_timing_mode.get() == '超鬼王模式1':
+            mode = 1
+        elif self.listbox_timing_mode.get() == '超鬼王模式2':
+            mode = 2
+        logging('mode:%s' % mode)
+        while True:
+            if self._running == 1:
+                self.fight.click_boss_notice(mode, self.queue)
+                self.fight_stop()
+                time.sleep(3)
+                audio_play()
+                messagebox.showinfo('就你鬼王多', '发现超鬼王啦！还不快冲鸭！')
+                audio_stop()
+                return
+            elif self._running == 0:
+                return
 
     def what_is_scaling_window(self):
         what_is_scaling = Toplevel(self)
@@ -561,7 +612,7 @@ class Application(Frame):
         label_win7['text'] = 'Windows 7'
         label_win7.grid(row=0, column=1)
 
-        ipath = self.resource_path('image/win10.png')
+        ipath = resource_path('image/win10.png')
         load = PLI_Image.open(ipath)
         load = load.resize(tuple(map(lambda x: int(x * 0.5), load.size)))
         render = ImageTk.PhotoImage(load)
@@ -569,7 +620,7 @@ class Application(Frame):
         img_win10.image = render
         img_win10.grid(row=1, column=0)
 
-        ipath = self.resource_path('image/win7.png')
+        ipath = resource_path('image/win7.png')
         load = PLI_Image.open(ipath)
         load = load.resize(tuple(map(lambda x: int(x * 0.5), load.size)))
         render = ImageTk.PhotoImage(load)
@@ -593,7 +644,7 @@ class Application(Frame):
             desc['width'] = 300
             desc.pack()
 
-            ipath = self.resource_path('image/single.png')
+            ipath = resource_path('image/single.png')
             load = PLI_Image.open(ipath)
             load = load.resize(tuple(map(lambda x: int(x * 0.7), load.size)))
             render = ImageTk.PhotoImage(load)
@@ -610,7 +661,7 @@ class Application(Frame):
             desc['width'] = 300
             desc.pack()
 
-            ipath = self.resource_path('image/passenger_accept.png')
+            ipath = resource_path('image/passenger_accept.png')
             load = PLI_Image.open(ipath)
             load = load.resize(tuple(map(lambda x: int(x * 0.7), load.size)))
             render = ImageTk.PhotoImage(load)
@@ -627,7 +678,7 @@ class Application(Frame):
             desc['width'] = 300
             desc.pack()
 
-            ipath = self.resource_path('image/driver_invite.png')
+            ipath = resource_path('image/driver_invite.png')
             load = PLI_Image.open(ipath)
             load = load.resize(tuple(map(lambda x: int(x * 0.5), load.size)))
             render = ImageTk.PhotoImage(load)
@@ -635,7 +686,7 @@ class Application(Frame):
             img1.image = render
             img1.pack()
 
-            ipath = self.resource_path('image/driver_form.png')
+            ipath = resource_path('image/driver_form.png')
             load = PLI_Image.open(ipath)
             load = load.resize(tuple(map(lambda x: int(x * 0.5), load.size)))
             render = ImageTk.PhotoImage(load)
@@ -756,7 +807,7 @@ class Application(Frame):
         self.var_timing_mode.set('无')
         self.listbox_timing_mode['textvariable'] = self.var_timing_mode
         self.listbox_timing_mode['width'] = 10
-        self.listbox_timing_mode['values'] = ["无", "定时[分钟]", "场数"]
+        self.listbox_timing_mode['values'] = ["无", "定时[分钟]", "场数", "超鬼王模式1", "超鬼王模式2"]
         self.listbox_timing_mode.bind("<<ComboboxSelected>>", self.turn_entry_on)
         self.label_timing_mode.grid(row=6, column=0, sticky='E')
         self.listbox_timing_mode.grid(row=6, column=1, sticky='W')
@@ -796,7 +847,7 @@ class Application(Frame):
         self.info_box['height'] = 20
         self.info_box.grid(row=1, column=0, columnspan=2)
         self.info_box.see(END)
-        var = 'Build 20200202'
+        var = 'Build 20200226'
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(var) + '\n')
         self.info_box.see(END)
