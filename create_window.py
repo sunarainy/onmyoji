@@ -5,19 +5,14 @@
 响应各控件功能
 """
 
-import time
 import random
 import shelve
 import threading
 from queue import Queue
-import win32gui
-import win32con
 import ctypes
 # import win32com.client
 import ctypes.wintypes
-import psutil
-import win32process
-from PIL import Image as PLI_Image, ImageTk
+from PIL import ImageTk
 from tkinter import *
 from tkinter import ttk
 import tkinter.messagebox as messagebox
@@ -33,6 +28,7 @@ class Application(Frame):
         :param master:
         """
         self.debug = False
+        self.version = 'miss'
         self.warning = '【封号防止】\n' + \
                        '请尽量在自己的日常刷魂时间使用\n' + \
                        '请不要长时间连续使用，任何使你看起来明显违背人类正常作息规律的行为，很容易会被鬼使黑盯上\n' + \
@@ -110,7 +106,6 @@ class Application(Frame):
 
         self.queue = Queue(maxsize=1)
         self._running = 0
-        self.create_main()
 
         hot_key = threading.Thread(target=self.hotkey_thread, name='hotkey_thread')
         hot_key.setDaemon(True)
@@ -119,80 +114,8 @@ class Application(Frame):
     def setdebug(self, debug):
         self.debug = debug
 
-    @staticmethod
-    def get_hwnds(pid):
-        """
-        return a list of window handlers based on it process id
-        :param pid: process id
-        :return: list of hwnds
-        """
-
-        def callback(hwnd, hwnds):
-            if win32gui.IsWindowVisible(hwnd) and win32gui.IsWindowEnabled(hwnd):
-                _, found_pid = win32process.GetWindowThreadProcessId(hwnd)
-                if found_pid == pid:
-                    hwnds.append(hwnd)
-            return True
-
-        hwnd_list = []
-        win32gui.EnumWindows(callback, hwnd_list)
-        return hwnd_list
-
-    # @staticmethod
-    def check_hwnd(self, label):
-        """
-        获取游戏窗口句柄
-        :param label: 游戏窗口title
-        :return: 游戏窗口存在则返回句柄对象，不存在则返回False
-        """
-        # hwnd = win32gui.FindWindow(None, label)
-        # return hwnd
-        print(label)
-        process = psutil.process_iter()
-        p = None
-        for i in process:
-            if i.name() == 'onmyoji.exe':
-                p = i.pid
-        if len(self.get_hwnds(p)) > 0:
-            hwnd = self.get_hwnds(p)[0]
-        else:
-            hwnd = None
-        if hwnd:
-            return hwnd
-        else:
-            hwnd = win32gui.FindWindow(None, label)
-            if hwnd:
-                return hwnd
-            else:
-                print('游戏没有运行')
-                return False
-
-    @staticmethod
-    def init_window_position(root, x, y):
-        """
-        初始化窗口位置
-        :param root: 顶层窗体
-        :param x: 横轴分母
-        :param y: 竖轴分母
-        :return:
-        """
-        screenwidth = root.winfo_screenwidth()
-        screenheight = root.winfo_screenheight()
-        root.resizable(False, False)
-        root.update_idletasks()
-        root.deiconify()
-        width = root.winfo_width()
-        height = root.winfo_height()
-        size = '%dx%d+%d+%d' % (width, height, (screenwidth - width) / x, (screenheight - height) / y)
-        root.geometry(size)
-
-    def jump_window(self):
-        """
-        使游戏窗口到最顶层
-        :return:
-        """
-        win32gui.SetForegroundWindow(self.hwnd)
-        win32gui.PostMessage(self.hwnd, win32con.WM_SYSCOMMAND, win32con.SC_RESTORE, 0)
+    def setversion(self, version):
+        self.version = version
 
     def get_scaling(self):
         """
@@ -261,24 +184,6 @@ class Application(Frame):
             messagebox.showinfo(title='提示', message='数字过小，无法执行')
             return False
         return var
-
-    @staticmethod
-    def time_format(second):
-        """
-        时间数值格式化
-        :param second: 总秒数
-        :return: 时间大于60秒则返回00:00:00格式
-        """
-        try:
-            second = int(second)
-        except ValueError:
-            return second
-        if second > 60:
-            m, s = divmod(second, 60)
-            h, m = divmod(m, 60)
-            return ':'.join((str(h).zfill(2), str(m).zfill(2), str(s).zfill(2)))
-        else:
-            return second
 
     def info_get(self):
         """
@@ -395,14 +300,14 @@ class Application(Frame):
         self.info_save()
 
         # 获取游戏窗口句柄
-        self.hwnd = self.check_hwnd(self.label)
+        self.hwnd = check_hwnd(self.label)
         if not self.hwnd:
             messagebox.showinfo(title='提示', message='游戏没有运行')
             return False
         # self.shell = win32com.client.Dispatch("WScript.Shell")
         # self.shell.SendKeys('%')
 
-        self.jump_window()
+        jump_window(self.hwnd)
         time.sleep(0.5)
         self.fight = GameController(self.hwnd, self.scaling)
         if self.debug:
@@ -455,7 +360,7 @@ class Application(Frame):
         战斗控制线程，并输出相关信息
         :return:
         """
-        self.jump_window()
+        jump_window(self.hwnd)
         if not self.queue.empty():
             self.queue.get()
         self.info_box.mark_set('insert', END)
@@ -476,7 +381,7 @@ class Application(Frame):
                 fight_start_time = time.time()
                 self.fight.form_team_phase(self.listbox_mode.get(), self.var_member.get(), self.queue)
                 self.fight.wait_fight_finish_phase(self.listbox_mode.get(), self.clear_time, self.queue)
-                self.jump_window()
+                jump_window(self.hwnd)
                 self.fight.settle_phase(self.queue)
                 if self._running == 1:
                     fight_end_time = int(time.time())
@@ -485,7 +390,7 @@ class Application(Frame):
                     total_time = total_time + fight_time
                     elapsed_time = fight_end_time - beginning_time
                     var = '第 %s 场 耗时：%s 共计：%s' % \
-                          (rounds, self.time_format(fight_time), self.time_format(elapsed_time))
+                          (rounds, time_format(fight_time), time_format(elapsed_time))
                     self.info_box.mark_set('insert', END)
                     self.info_box.insert('insert', str(var) + '\n')
                     self.info_box.see(END)
@@ -498,7 +403,7 @@ class Application(Frame):
                             win32gui.PostMessage(self.hwnd, win32con.WM_CLOSE, 0, 0)
                             time.sleep(1)
                             lebel_exit = '退出游戏'
-                            hwnd_exit = self.check_hwnd(lebel_exit)
+                            hwnd_exit = check_hwnd(lebel_exit)
                             win32gui.PostMessage(hwnd_exit, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
                             win32gui.PostMessage(hwnd_exit, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
                             var = '已到达预定目标，游戏窗口已关闭。下线15分钟后buff自动关闭'
@@ -628,7 +533,7 @@ class Application(Frame):
         img_win7.image = render
         img_win7.grid(row=1, column=1)
 
-        self.init_window_position(what_is_scaling, 1.3, 3)
+        init_window_position(what_is_scaling, 1.3, 3)
 
     def when_click_start_window(self):
         when_click_start = Toplevel(self)
@@ -694,7 +599,7 @@ class Application(Frame):
             img2.image = render
             img2.pack()
 
-        self.init_window_position(when_click_start, 1.3, 3)
+        init_window_position(when_click_start, 1.3, 3)
 
     def what_is_clear_time(self):
         what_is_clear = Toplevel(self)
@@ -709,7 +614,7 @@ class Application(Frame):
                        '\n如果设置一个较短的时间也可以，不过设置一个合理的时间，能节省你CPU资源\n（其实也没占多少_(:3」∠)_\n'
         desc['width'] = 300
         desc.pack()
-        self.init_window_position(what_is_clear, 1.3, 3)
+        init_window_position(what_is_clear, 1.3, 3)
 
     def what_is_delay_time(self):
         what_is_delay = Toplevel(self)
@@ -723,7 +628,7 @@ class Application(Frame):
                        '\n填入的时间还会加上一个300毫秒以内的随机时间\n'
         desc['width'] = 300
         desc.pack()
-        self.init_window_position(what_is_delay, 1.3, 3)
+        init_window_position(what_is_delay, 1.3, 3)
 
     def create_main(self):
         """
@@ -847,7 +752,7 @@ class Application(Frame):
         self.info_box['height'] = 20
         self.info_box.grid(row=1, column=0, columnspan=2)
         self.info_box.see(END)
-        var = 'Build 20200226'
+        var = 'Build ' + self.version
         self.info_box.mark_set('insert', END)
         self.info_box.insert('insert', str(var) + '\n')
         self.info_box.see(END)
