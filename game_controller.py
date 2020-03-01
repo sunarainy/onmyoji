@@ -120,7 +120,7 @@ class FormTeamDisplay(OnmyojiObjectBase):
         self.hash = '000000000000479c67dc7fdc7fd877d87fdc7fdc7fdc7f5c7fdc7ffc2b380000'
 
 
-class MultipleDisplay(OnmyojiObjectBase):
+class MultiplayerDisplay(OnmyojiObjectBase):
     """组队人数判定区域对象"""
     def _attribute(self):
         self.click_area = (round(self.left + self.width * 0.92),
@@ -143,13 +143,13 @@ class MultipleDisplay(OnmyojiObjectBase):
         )
         self.hashes = (
             '003f001fec3fec3f9b3fc13f003f243f3c3f383f363f313f007f007f807f807f',
-            '003f001fec3fec3f9b3fc13f003f243f3c3f383f363f313f007f007f807f807f',
+            'fff3fff8ffffffffffff1ff707f000a0000000000000ffff0000000000000000',
             'fffffffffffffe1ff0040000efff001f000400000000ffffffff000000000000'
         )
 
 
 class OfferDisplay(OnmyojiObjectBase):
-    """悬赏界面判定区域|对象"""
+    """悬赏界面判定区域对象"""
     def _attribute(self):
         self.scan_area = (round(self.scaling_left + self.scaling_width * 0.4),
                           round(self.scaling_top + self.scaling_height * 0.2),
@@ -204,7 +204,7 @@ class GameController:
         self.rewardobj = RewardDisplay(hwnd, scaling)
         self.battledataobj = BattleDataDisplay(hwnd, scaling)
         self.singleobj = SinglePlayerDisplay(hwnd, scaling)
-        self.mutipleobj = MultipleDisplay(hwnd, scaling)
+        self.mutipleobj = MultiplayerDisplay(hwnd, scaling)
         self.formteamobj = FormTeamDisplay(hwnd, scaling)
         self.offerobj = OfferDisplay(hwnd, scaling)
         self.fullrepobj = FullRepoDisplay(hwnd, scaling)
@@ -257,7 +257,7 @@ class GameController:
                         img_hash = get_hash(catch_img)
                         r1, r2 = hamming(img_hash, self.mutipleobj.hashes[i], 10)
                         if self.debug:
-                            logging('[%s]%s %s:%s:%s' % ('form_team_phase2', mode, img_hash, r1, r2))
+                            logging('[%s]%s 乘客%s %s:%s:%s' % ('form_team_phase2', num, mode, img_hash, r1, r2))
                         if not r1:
                             num = num + 1
                     if num == fight_num - 1:
