@@ -30,5 +30,5 @@ def create_app(title, version):
     return app
 
 
-myapp = create_app('就你破势多', '20200228')
+myapp = create_app('就你破势多', '20200301')
 myapp.mainloop()

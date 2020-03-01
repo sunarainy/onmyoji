@@ -75,6 +75,10 @@ class ExitDisplay(OnmyojiObjectBase):
 class RewardDisplay(OnmyojiObjectBase):
     """奖励显示判定区域对象"""
     def _attribute(self):
+        self.click_area = (round(self.left + self.width * 0.89),
+                           round(self.top + self.height * 0.23),
+                           round(self.left + self.width * 0.95),
+                           round(self.top + self.height * 0.7))
         self.scan_area = (round(self.scaling_left + self.scaling_width * 0.42),
                           round(self.scaling_top + self.scaling_height * 0.82),
                           round(self.scaling_left + self.scaling_width * 0.58),
@@ -144,15 +148,6 @@ class MultipleDisplay(OnmyojiObjectBase):
         )
 
 
-class BlankClickableArea(OnmyojiObjectBase):
-    """空白点击区域对象"""
-    def _attribute(self):
-        self.click_area = (round(self.left + self.width * 0.89),
-                           round(self.top + self.height * 0.23),
-                           round(self.left + self.width * 0.95),
-                           round(self.top + self.height * 0.7))
-
-
 class OfferDisplay(OnmyojiObjectBase):
     """悬赏界面判定区域|对象"""
     def _attribute(self):
@@ -173,10 +168,10 @@ class FullRepoDisplay(OnmyojiObjectBase):
         self.scan_area = (round(self.scaling_left + self.scaling_width * 0.35),
                           round(self.scaling_top + self.scaling_height * 0.35),
                           round(self.scaling_left + self.scaling_width * 0.65),
-                          round(self.scaling_top + self.scaling_height * 0.6))
+                          round(self.scaling_top + self.scaling_height * 0.67))
         self.hash = 'ffff0008000810960004ce7ef81ff81ffffff81ffbdffe5ffa5ff81ff81fffff'
         self.button = (
-            (round(self.left + self.width * 0.5), round(self.top + self.height * 0.6))
+            (round(self.left + self.width * 0.5), round(self.top + self.height * 0.6)),
         )
 
 
@@ -192,7 +187,7 @@ class BossMessageisplay(OnmyojiObjectBase):
             '03ff03ff03bf073f07370731073107330731071107310f310f150e590fff1fff'
         ]
         self.button = (
-            (round(self.left + self.width * 0.1), round(self.top + self.height * 0.37))
+            (round(self.left + self.width * 0.1), round(self.top + self.height * 0.37)),
         )
 
 
@@ -211,7 +206,6 @@ class GameController:
         self.singleobj = SinglePlayerDisplay(hwnd, scaling)
         self.mutipleobj = MultipleDisplay(hwnd, scaling)
         self.formteamobj = FormTeamDisplay(hwnd, scaling)
-        self.blankobj = BlankClickableArea(hwnd, scaling)
         self.offerobj = OfferDisplay(hwnd, scaling)
         self.fullrepobj = FullRepoDisplay(hwnd, scaling)
         self.bossobj = BossMessageisplay(hwnd, scaling)
@@ -347,7 +341,7 @@ class GameController:
                 if r1:
                     battle_buttun_is_appear = True
                     # 在右侧边缘范围内随机移动鼠标位置，并随机点击1-3次
-                    self.blankobj.area_click(int(random.uniform(1, 3)))
+                    self.rewardobj.area_click(int(random.uniform(1, 3)))
                 elif not r1:
                     if battle_buttun_is_appear:
                         time.sleep(2)
@@ -375,7 +369,7 @@ class GameController:
                 break
             else:
                 # 在右侧边缘范围内随机移动鼠标位置，并随机点击1-3次
-                self.blankobj.area_click(int(random.uniform(1, 3)))
+                self.rewardobj.area_click(int(random.uniform(1, 3)))
             time.sleep(round(random.uniform(0.5, 1.0), 2))
         for battle_round in range(0, 10):
             catch_img = ImageGrab.grab(self.rewardobj.scan_area)
@@ -388,7 +382,7 @@ class GameController:
                 break
             else:
                 # 在右侧边缘范围内随机移动鼠标位置，并随机点击1-3次，直到结算结束
-                self.blankobj.area_click(int(random.uniform(1, 3)))
+                self.rewardobj.area_click(int(random.uniform(1, 3)))
             time.sleep(round(random.uniform(0.5, 1.0), 2))
 
     def check_offer(self, offer_mode, queue):
