@@ -106,6 +106,33 @@ def get_curpos():
     return win32gui.GetCursorPos()
 
 
+def get_resolution():
+    """
+    获取Windows分辨率和缩放比例
+    :return: 返回分辨率和缩放比例dict
+    """
+    user32 = windll.user32
+    gdi32 = windll.gdi32
+    dc = user32.GetDC(None)
+    # noinspection PyBroadException
+    try:
+        width_scale = gdi32.GetDeviceCaps(dc, 8)  # 分辨率缩放后的宽度
+        height_scale = gdi32.GetDeviceCaps(dc, 10)  # 分辨率缩放后的高度
+        width = gdi32.GetDeviceCaps(dc, 118)  # 原始分辨率的宽度
+        height = gdi32.GetDeviceCaps(dc, 117)  # 原始分辨率的高度
+        scaling = width / width_scale
+    except Exception:
+        print('无法获取Windows缩放比例')
+        return False
+
+    return {'width_scale': width_scale,
+            'height_scale': height_scale,
+            'width': width,
+            'height': height,
+            'scaling': float(scaling)
+            }
+
+
 def get_hash(img):
     """
     对图像缩放至16*16灰度，计算平均hash值

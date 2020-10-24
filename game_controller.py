@@ -9,7 +9,11 @@ import time
 import random
 import win32gui
 from PIL import ImageGrab
-from utilities import logging, click_left_cur, move_curpos, get_hash, hamming
+from utilities import logging, click_left_cur, move_curpos, get_hash, hamming, get_resolution
+
+
+class ResolutionGetError(Exception):
+    pass
 
 
 class OnmyojiObjectBase:
@@ -192,13 +196,18 @@ class BossMessageisplay(OnmyojiObjectBase):
 
 
 class GameController:
-    def __init__(self, hwnd, scaling):
+    def __init__(self, hwnd):
         """
         对游戏数据进行初始化
         :param hwnd: 游戏窗口句柄
-        :param scaling: Windows窗口缩放倍率
         """
         self.debug = False
+
+        # 获取缩放比例
+        self.resolution = get_resolution()
+        if not self.resolution:
+            raise ResolutionGetError
+        scaling = self.resolution['scaling']
 
         self.exitobj = ExitDisplay(hwnd, scaling)
         self.rewardobj = RewardDisplay(hwnd, scaling)
@@ -216,11 +225,11 @@ class GameController:
     def setdebug(self, debug):
         self.debug = debug
 
-    def form_team_phase(self, mode, fight_num, queue):
+    def form_team_phase(self, mode, player_amount, queue):
         """
         组队阶段控制方法
         :param mode: 组队模式
-        :param fight_num: 车队人数
+        :param player_amount: 车队人数
         :param queue: 队列对象
         :return:
         """
@@ -260,7 +269,7 @@ class GameController:
                             logging('[%s]%s 乘客%s %s:%s:%s' % ('form_team_phase2', num, mode, img_hash, r1, r2))
                         if not r1:
                             num = num + 1
-                    if num == fight_num - 1:
+                    if num == player_amount - 1:
                         break
                     time.sleep(0.5)
                 elif self._running == 0:
@@ -385,10 +394,10 @@ class GameController:
                 self.rewardobj.area_click(int(random.uniform(1, 3)))
             time.sleep(round(random.uniform(0.5, 1.0), 2))
 
-    def check_offer(self, offer_mode, queue):
+    def check_offer(self, mode, queue):
         """
         处理悬赏协助询问
-        :param offer_mode: 悬赏协助处理模式
+        :param mode: 悬赏协助处理模式  1:接受 2：拒绝
         :param queue: 队列对象
         :return:
         """
@@ -399,9 +408,9 @@ class GameController:
                 catch_img = ImageGrab.grab(self.offerobj.scan_area)
                 r1, r2 = hamming(get_hash(catch_img), self.offerobj.hash, 30)
                 if r1:
-                    if offer_mode == "接受":
+                    if mode == 1:
                         self.offerobj.custom_click(0)
-                    elif offer_mode == "拒绝":
+                    elif mode == 2:
                         self.offerobj.custom_click(1)
                     click_left_cur()
                 time.sleep(1.3)
@@ -429,7 +438,7 @@ class GameController:
     def click_boss_notice(self, mode, queue):
         """
         点击发现超鬼王提示
-        :param mode:
+        :param mode: 1：超鬼王模式1-仅自己发现的鬼王 2：超鬼王模式2-自己发现的鬼王或好友邀请的鬼王
         :param queue: 队列对象
         :return:
         """

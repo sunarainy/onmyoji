@@ -13,8 +13,7 @@ a = Analysis(['onmyoji_win.py'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher)
-a.datas += [('image/win10.png', '.\\image\\win10.png',  'DATA'),
-('image/win7.png','.\\image\\win7.png','DATA'),
+a.datas += [
 ('image/single.png', '.\\image\\single.png',  'DATA'),
 ('image/passenger_accept.png', '.\\image\\passenger_accept.png',  'DATA'),
 ('image/driver_invite.png', '.\\image\\driver_invite.png',  'DATA'),

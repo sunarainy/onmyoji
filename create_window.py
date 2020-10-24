@@ -10,14 +10,13 @@ import shelve
 import threading
 from queue import Queue
 import ctypes
-# import win32com.client
 import ctypes.wintypes
 from PIL import ImageTk
 from tkinter import *
 from tkinter import ttk
 import tkinter.messagebox as messagebox
 from tkinter.scrolledtext import ScrolledText
-from game_controller import GameController
+from game_controller import GameController, ResolutionGetError
 from utilities import *
 
 
@@ -51,12 +50,6 @@ class Application(Frame):
         self.frame1.pack()
         self.frame2 = Frame(self)
         self.frame2.pack()
-
-        self.label_scaling = Label(self.frame1)
-        self.var_scaling = StringVar(self.frame1)
-        self.entry_scaling = Entry(self.frame1)
-
-        self.button_scaling_explain = Button(self.frame1)
 
         self.label_mode = Label(self.frame1)
         self.var_mode = StringVar(self.frame1)
@@ -116,22 +109,6 @@ class Application(Frame):
 
     def setversion(self, version):
         self.version = version
-
-    def get_scaling(self):
-        """
-        校验windows缩放倍率输入值
-        :return: 校验通过则返回浮点型数字，否则返回False
-        """
-        var = self.entry_scaling.get()
-        try:
-            var = float(var)
-        except ValueError:
-            messagebox.showinfo(title='提示', message='缩放倍率只能为数字')
-            return False
-        if var > 2:
-            messagebox.showinfo(title='提示', message='缩放倍率过高')
-            return False
-        return var
 
     def get_clear_time(self):
         """
@@ -207,7 +184,6 @@ class Application(Frame):
         """
         with shelve.open('mysetting.db') as data:
             setting_data = dict()
-            setting_data['scaling'] = self.var_scaling.get()
             setting_data['clear_time'] = self.var_clear_time.get()
             setting_data['delay_time'] = self.var_delay_time.get()
             data['setting'] = setting_data
@@ -261,7 +237,6 @@ class Application(Frame):
             self.listbox_done_action_mode.configure(state='disabled')
 
     def turn_all_widget_off(self):
-        self.entry_scaling.configure(state='disabled')
         self.entry_clear_time.configure(state='disabled')
         self.entry_delay_time.configure(state='disabled')
         self.entry_timing_value.configure(state='disabled')
@@ -271,7 +246,6 @@ class Application(Frame):
         self.listbox_done_action_mode.configure(state='disabled')
 
     def turn_all_widget_on(self):
-        self.entry_scaling.configure(state='normal')
         self.entry_clear_time.configure(state='normal')
         self.entry_delay_time.configure(state='normal')
         self.entry_timing_value.configure(state='normal')
@@ -285,9 +259,6 @@ class Application(Frame):
         START按钮响应流程
         :return:
         """
-        self.scaling = self.get_scaling()
-        if not self.scaling:
-            return False
         self.clear_time = self.get_clear_time()
         if not self.clear_time:
             return False
@@ -309,7 +280,14 @@ class Application(Frame):
 
         jump_window(self.hwnd)
         time.sleep(0.5)
-        self.fight = GameController(self.hwnd, self.scaling)
+        try:
+            self.fight = GameController(self.hwnd)
+            print('原分辨率 %s * %s' % (self.fight.resolution['width'], self.fight.resolution['height']))
+            print('缩放后分辨率 %s * %s' % (self.fight.resolution['width_scale'], self.fight.resolution['height_scale']))
+            print('缩放比例 %s' % self.fight.resolution['scaling'])
+        except ResolutionGetError:
+            messagebox.showinfo(title='提示', message='获取Windows缩放比例失败,无法计算坐标')
+            return False
         if self.debug:
             self.fight.setdebug(True)
         threads = []
@@ -426,7 +404,12 @@ class Application(Frame):
         """
         while True:
             if self._running == 1:
-                self.fight.check_offer(self.listbox_offer_mode.get(), self.queue)
+                mode = None
+                if self.listbox_offer_mode.get() == "接受":
+                    mode = 1
+                elif self.listbox_offer_mode.get() == "拒绝":
+                    mode = 2
+                self.fight.check_offer(mode, self.queue)
             elif self._running == 0:
                 return
 
@@ -488,52 +471,6 @@ class Application(Frame):
                 return
             elif self._running == 0:
                 return
-
-    def what_is_scaling_window(self):
-        what_is_scaling = Toplevel(self)
-        what_is_scaling.title('缩放倍率 - 不能自动获取，技术就是这么菜，不服憋着_(:3」∠)_')
-
-        frame1 = Frame(what_is_scaling)
-        frame1.pack()
-        frame2 = Frame(what_is_scaling)
-        frame2.pack()
-
-        title = Label(frame1)
-        title['text'] = '\n【 缩放倍率 】'
-        title.pack()
-        desc1 = Message(frame1)
-        desc1['width'] = 600
-        desc1['text'] = '\n缩放倍率是指Windows系统在不改变分辨率的情况下，将窗口和图标放大以达到更加舒适的显示效果的功能\n' + \
-                        '\n在某些分辨率下，Windows会自动设置一个超过100%的倍率。请确定自己系统当前的缩放倍率设置，并填入缩放倍率一栏中\n' + \
-                        '\n不正确的缩放倍率设置，会导致坐标计算不准\n' + \
-                        '\n若设置的缩放倍率是100%，则填入1，若是125%，则填1.25，依次类推\n'
-        desc1.pack()
-
-        label_win10 = Label(frame2)
-        label_win10['text'] = 'Windows 10'
-        label_win10.grid(row=0, column=0)
-
-        label_win7 = Label(frame2)
-        label_win7['text'] = 'Windows 7'
-        label_win7.grid(row=0, column=1)
-
-        ipath = resource_path('image/win10.png')
-        load = PLI_Image.open(ipath)
-        load = load.resize(tuple(map(lambda x: int(x * 0.5), load.size)))
-        render = ImageTk.PhotoImage(load)
-        img_win10 = Label(frame2, image=render)
-        img_win10.image = render
-        img_win10.grid(row=1, column=0)
-
-        ipath = resource_path('image/win7.png')
-        load = PLI_Image.open(ipath)
-        load = load.resize(tuple(map(lambda x: int(x * 0.5), load.size)))
-        render = ImageTk.PhotoImage(load)
-        img_win7 = Label(frame2, image=render)
-        img_win7.image = render
-        img_win7.grid(row=1, column=1)
-
-        init_window_position(what_is_scaling, 1.3, 3)
 
     def when_click_start_window(self):
         when_click_start = Toplevel(self)
@@ -635,17 +572,6 @@ class Application(Frame):
         窗体、控件绘制
         :return:
         """
-        self.label_scaling['text'] = '缩放倍率'
-        self.var_scaling.set(self.scaling)
-        self.entry_scaling['textvariable'] = self.var_scaling
-        self.label_scaling.grid(row=0, column=0, sticky='E')
-        self.entry_scaling.grid(row=0, column=1, sticky='W', columnspan=2)
-
-        self.button_scaling_explain['text'] = '?'
-        self.button_scaling_explain['command'] = self.what_is_scaling_window
-        self.button_scaling_explain['relief'] = 'flat'
-        self.button_scaling_explain.grid(row=0, column=2, sticky='E')
-
         self.label_mode['text'] = '模式'
         self.var_mode.set('单刷')
         self.listbox_mode['textvariable'] = self.var_mode
