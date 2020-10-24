@@ -3,7 +3,6 @@
     请不要传播！
 #### Build 20201024
     修改：自动检测缩放比例，去除填写表单
-    增加：Ctrl + F2 进入debug模式，记录日志
 
 #### Build 20200226
     增加：预定结束模式增加超鬼王检测，发现鬼王停止挂机并播放音乐
@@ -36,7 +35,7 @@
     隐藏了console窗口
    
    
-![界面截图](https://github.com/sunarainy/onmyoji/raw/master/image/capture.png)
+![界面截图](https://raw.githubusercontent.com/sunarainy/onmyoji/master/image/capture.png)
 
 FAQ
 ====
