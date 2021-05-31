@@ -31,6 +31,8 @@ def mypath():
     """
     if os.path.splitext(sys.argv[0])[1] == '.py':
         mp = os.path.dirname(sys.argv[0])
+        if mp == '':
+            mp = '.'
     else:
         mp = os.path.dirname(sys.executable)
     return mp

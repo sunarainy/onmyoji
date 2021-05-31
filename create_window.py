@@ -28,10 +28,10 @@ class Application(Frame):
         """
         self.debug = False
         self.version = 'miss'
-        self.warning = '【封号防止】\n' + \
+        self.warning = '【鬼黑防止】\n' + \
                        '请尽量在自己的日常刷魂时间使用\n' + \
-                       '请不要长时间连续使用，任何使你看起来明显违背人类正常作息规律的行为，很容易会被鬼使黑盯上\n' + \
-                       '当你离开了常在城市，请不要使用，这会被认为是找了代练\n' + \
+                       '请尽量使肝度曲线平滑，不要出现陡峭式上升\n' + \
+                       '请尽量优先使用樱饼\n' + \
                        '点到为止，贪婪是万恶之源\n'
         self.label = r'阴阳师-网易游戏'
         self.hwnd = None
@@ -39,7 +39,7 @@ class Application(Frame):
         if not self.info_get():
             self.scaling = 1
             self.clear_time = 35
-            self.delay_time = 1
+            self.delay_time = 0
         self.fight = None
         self.timing_value = None
 
@@ -89,6 +89,15 @@ class Application(Frame):
         self.var_done_action_mode = StringVar(self.frame1)
         self.listbox_done_action_mode = ttk.Combobox(self.frame1)
 
+        self.label_custom_button = Label(self.frame1)
+        self.var_custom_button = StringVar(self.frame1)
+        self.listbox_custom_button = ttk.Combobox(self.frame1)
+
+        self.var_xy_value = StringVar(self.frame1)
+        self.entry_xy_value = Entry(self.frame1)
+
+        self.test_ctn = Button(self.frame1)
+
         self.entry_test = Entry(self.frame1)
         self.test_btn = Button(self.frame1)
 
@@ -137,7 +146,7 @@ class Application(Frame):
         except ValueError:
             messagebox.showinfo(title='提示', message='战斗后等待时间只能为数字')
             return False
-        if var <= 0:
+        if var < 0:
             messagebox.showinfo(title='提示', message='战斗后等待时间不能小于0')
             return False
         return var
@@ -162,6 +171,46 @@ class Application(Frame):
             return False
         return var
 
+    def get_xy_value(self):
+        """
+        校验自定义按钮坐标输入值
+        :return: 校验通过则返回[(float, float)]，否则返回False
+        """
+        var = self.var_xy_value.get()
+        mode = self.listbox_custom_button.get()
+        if mode == '固定位置点击':
+            if len(var.split(':')) == 1:
+                messagebox.showinfo(title='提示', message='不正确的输入值%s' % var)
+                return False
+            else:
+                try:
+                    x = float(var.split(':')[0])
+                    y = float(var.split(':')[1])
+                except ValueError:
+                    messagebox.showinfo(title='提示', message='不正确的输入值%s' % var)
+                    return False
+                lst = [(x, y)]
+                return lst
+        elif mode == '范围内随机点击':
+            if len(var.split('|')) == 1:
+                messagebox.showinfo(title='提示', message='不正确的输入值%s' % var)
+            else:
+                lst = []
+                for i in var.split('|'):
+                    if len(i.split(':')) == 1:
+                        messagebox.showinfo(title='提示', message='不正确的输入值%s' % i)
+                    else:
+                        try:
+                            x = float(i.split(':')[0])
+                            y = float(i.split(':')[1])
+                        except ValueError:
+                            messagebox.showinfo(title='提示', message='不正确的输入值%s' % i)
+                            return False
+                        lst.append((x, y))
+                return lst
+        else:
+            return False
+
     def info_get(self):
         """
         读取存储文件
@@ -170,7 +219,6 @@ class Application(Frame):
         try:
             with shelve.open('mysetting.db') as data:
                 setting_data = data['setting']
-                self.scaling = setting_data['scaling']
                 self.clear_time = setting_data['clear_time']
                 self.delay_time = setting_data['delay_time']
         except KeyError:
@@ -203,7 +251,7 @@ class Application(Frame):
             self.radio1.configure(state='disabled')
             self.radio2.configure(state='disabled')
 
-    def turn_entry_on(self, *args):
+    def turn_timing_entry_on(self, *args):
         """
         根据条件激活相应控件
         :param args:
@@ -236,23 +284,81 @@ class Application(Frame):
             self.var_done_action_mode.set('')
             self.listbox_done_action_mode.configure(state='disabled')
 
+    def turn_xys_entry_on(self, *args):
+        """
+        根据条件激活相应控件
+        :param args:
+        :return:
+        """
+        type(args)
+        var = self.listbox_custom_button.get()
+        if var == '固定位置点击':
+            self.entry_xy_value.configure(state='normal')
+            self.test_ctn.configure(state='active')
+            self.var_custom_button.set('固定位置点击')
+            content = '\n固定位置点击：\n以[x:y]的格式填入横纵坐标比例。如希望点击位于画面正中心的按钮则填入\n' \
+                      '0.5:0.5\n' \
+                      '点击@按钮光标将移动到指定位置'
+            self.info_box.mark_set('insert', END)
+            self.info_box.insert('insert', str(content) + '\n')
+            self.info_box.see(END)
+        elif var == '范围内随机点击':
+            self.entry_xy_value.configure(state='normal')
+            self.test_ctn.configure(state='active')
+            self.var_custom_button.set('范围内随机点击')
+            content = '\n范围内随机点击：\n以[x:y|x:y]的格式填入随机点击区域范围的【左上角】横纵坐标比例与【右下角】横纵坐标比例，如\n' \
+                      '0.4:0.4|0.6:0.6\n' \
+                      '点击@按钮光标将先移动到指定的左上角，2秒后移动到指定的右下角'
+            self.info_box.mark_set('insert', END)
+            self.info_box.insert('insert', str(content) + '\n')
+            self.info_box.see(END)
+        else:
+            self.entry_xy_value.configure(state='disabled')
+            self.test_ctn.configure('disabled')
+
     def turn_all_widget_off(self):
         self.entry_clear_time.configure(state='disabled')
         self.entry_delay_time.configure(state='disabled')
         self.entry_timing_value.configure(state='disabled')
+        self.entry_xy_value.configure(state='disabled')
         self.listbox_mode.configure(state='disabled')
         self.listbox_offer_mode.configure(state='disabled')
         self.listbox_timing_mode.configure(state='disabled')
         self.listbox_done_action_mode.configure(state='disabled')
+        self.listbox_custom_button.configure(state='disabled')
 
     def turn_all_widget_on(self):
         self.entry_clear_time.configure(state='normal')
         self.entry_delay_time.configure(state='normal')
         self.entry_timing_value.configure(state='normal')
+        self.entry_xy_value.configure(state='disabled')
         self.listbox_mode.configure(state='normal')
         self.listbox_offer_mode.configure(state='normal')
         self.listbox_timing_mode.configure(state='normal')
         self.listbox_done_action_mode.configure(state='normal')
+        self.listbox_custom_button.configure(state='normal')
+
+    def move_test(self):
+        """
+        @按钮响应流程
+        :return:
+        """
+        # 获取游戏窗口句柄
+        self.hwnd = check_hwnd(self.label)
+        if not self.hwnd:
+            messagebox.showinfo(title='提示', message='游戏没有运行')
+            return False
+        jump_window(self.hwnd)
+        time.sleep(0.5)
+        var = self.get_xy_value()
+        if not var:
+            return False
+        try:
+            mvtst = GameController(self.hwnd, xys=var)
+        except ResolutionGetError:
+            messagebox.showinfo(title='提示', message='获取Windows缩放比例失败,无法计算坐标')
+            return False
+        mvtst.move_test()
 
     def fight_start(self):
         """
@@ -263,7 +369,7 @@ class Application(Frame):
         if not self.clear_time:
             return False
         self.delay_time = self.get_delay_time()
-        if not self.delay_time:
+        if self.delay_time is None:
             return False
         self.timing_value = self.get_timimg()
         if not self.timing_value:
@@ -281,7 +387,10 @@ class Application(Frame):
         jump_window(self.hwnd)
         time.sleep(0.5)
         try:
-            self.fight = GameController(self.hwnd)
+            var = self.get_xy_value()
+            if not var:
+                var = None
+            self.fight = GameController(self.hwnd, xys=var)
             print('原分辨率 %s * %s' % (self.fight.resolution['width'], self.fight.resolution['height']))
             print('缩放后分辨率 %s * %s' % (self.fight.resolution['width_scale'], self.fight.resolution['height_scale']))
             print('缩放比例 %s' % self.fight.resolution['scaling'])
@@ -307,8 +416,9 @@ class Application(Frame):
         else:
             self.queue.get()
             self.queue.put(1)
-        self.start_ctn.configure(state='disabled')
-        self.stop_ctn.configure(state='active')
+        self.start_ctn['text'] = 'STOP'
+        self.start_ctn['command'] = self.fight_stop
+        self.test_ctn.configure(state='disabled')
         for thread in threads:
             thread.setDaemon(True)
             thread.start()
@@ -321,8 +431,9 @@ class Application(Frame):
         # 将线程状态、队列内容置为0
         self._running = 0
         self.queue.put(0)
-        self.start_ctn.configure(state='active')
-        self.stop_ctn.configure(state='disabled')
+        self.start_ctn['text'] = 'START'
+        self.start_ctn['command'] = self.fight_start
+        self.test_ctn.configure(state='active')
         self.turn_all_widget_on()
         var = '[%s]挂机结束。记得关御魂buff' % datetime.datetime.now().strftime("%H:%M:%S")
         self.info_box.mark_set('insert', END)
@@ -397,6 +508,34 @@ class Application(Frame):
             elif self._running == 0:
                 return
 
+    def snapshot(self):
+        """
+        按 Ctrl + F3 进行截图。输入数据格式为：
+        1-0.1:0.2:0.3:0.4|0.2:0.3:0.4:0.5
+        """
+        content = self.info_box.get(1.0, END)
+        params = []
+        try:
+            area = content.strip().split('-')[0]
+            for i in content.strip().split('-')[1].split('|'):
+                if i == '':
+                    pass
+                else:
+                    tmp = map(lambda x: float(x), i.split(':'))
+                    params.append(tuple(tmp))
+            scan_areas = tuple(params)
+        except IndexError:
+            messagebox.showinfo(title='提示', message='错误的参数输入')
+            return False
+        self.hwnd = check_hwnd(self.label)
+        if not self.hwnd:
+            messagebox.showinfo(title='提示', message='游戏没有运行')
+            return False
+        jump_window(self.hwnd)
+        time.sleep(0.5)
+        gamecontroller = GameController(self.hwnd)
+        gamecontroller.snapshot(area=area, scan_areas=scan_areas)
+
     def offer_thread(self):
         """
         悬赏协助控制线程
@@ -433,6 +572,7 @@ class Application(Frame):
         byref = ctypes.byref
         user32.RegisterHotKey(None, 10001, win32con.MOD_CONTROL, win32con.VK_F1)
         user32.RegisterHotKey(None, 10002, win32con.MOD_CONTROL, win32con.VK_F2)
+        user32.RegisterHotKey(None, 10003, win32con.MOD_CONTROL, win32con.VK_F3)
 
         try:
             msg = ctypes.wintypes.MSG()
@@ -443,6 +583,8 @@ class Application(Frame):
                     elif self._running == 0 and msg.wParam == 10002:
                         self.setdebug(True)
                         self.fight_start()
+                    elif self._running == 0 and msg.wParam == 10003:
+                        self.snapshot()
                 user32.TranslateMessage(byref(msg))
                 user32.DispatchMessageA(byref(msg))
         finally:
@@ -592,14 +734,12 @@ class Application(Frame):
         self.radio1['text'] = '2人'
         self.radio1['variable'] = self.var_member
         self.radio1['value'] = 2
-        # self.radio1['command'] = self.test_val3
         self.radio1.grid(row=2, column=1, sticky='W')
         self.radio1.configure(state='disabled')
 
         self.radio2['text'] = '3人'
         self.radio2['variable'] = self.var_member
         self.radio2['value'] = 3
-        # self.radio2['command'] = self.test_val3
         self.radio2.grid(row=2, column=2, sticky='W')
         self.radio2.configure(state='disabled')
 
@@ -630,7 +770,6 @@ class Application(Frame):
         self.listbox_offer_mode['textvariable'] = self.var_offer_mode
         self.listbox_offer_mode['width'] = 10
         self.listbox_offer_mode['values'] = ["接受", "拒绝"]
-        # self.listbox_offer_mode.bind("<<ComboboxSelected>>", self.turn_entry_on)
         self.label_offer.grid(row=5, column=0, sticky='E')
         self.listbox_offer_mode.grid(row=5, column=1, sticky='W')
 
@@ -639,7 +778,7 @@ class Application(Frame):
         self.listbox_timing_mode['textvariable'] = self.var_timing_mode
         self.listbox_timing_mode['width'] = 10
         self.listbox_timing_mode['values'] = ["无", "定时[分钟]", "场数", "超鬼王模式1", "超鬼王模式2"]
-        self.listbox_timing_mode.bind("<<ComboboxSelected>>", self.turn_entry_on)
+        self.listbox_timing_mode.bind("<<ComboboxSelected>>", self.turn_timing_entry_on)
         self.label_timing_mode.grid(row=6, column=0, sticky='E')
         self.listbox_timing_mode.grid(row=6, column=1, sticky='W')
 
@@ -655,9 +794,29 @@ class Application(Frame):
         self.listbox_done_action_mode['width'] = 10
         self.listbox_done_action_mode.configure(state='disabled')
         self.listbox_done_action_mode['values'] = ["关闭游戏窗口", "仅停止挂机"]
-        # self.listbox_done_action_mode.bind("<<ComboboxSelected>>", self.turn_entry_on)
         self.label_done_action_mode.grid(row=7, column=0, sticky='E')
         self.listbox_done_action_mode.grid(row=7, column=1, sticky='W')
+
+        self.label_custom_button['text'] = '自定义副本开始按钮'
+        self.var_custom_button.set('无')
+        self.listbox_custom_button['textvariable'] = self.var_custom_button
+        self.listbox_custom_button['width'] = 10
+        self.listbox_custom_button['values'] = ["无", "固定位置点击", "范围内随机点击"]
+        self.listbox_custom_button.bind("<<ComboboxSelected>>", self.turn_xys_entry_on)
+        self.label_custom_button.grid(row=8, column=0, sticky='E')
+        self.listbox_custom_button.grid(row=8, column=1, sticky='W')
+
+        self.var_xy_value.set('')
+        self.entry_xy_value['textvariable'] = self.var_xy_value
+        self.entry_xy_value['width'] = 7
+        self.entry_xy_value.configure(state='disabled')
+        self.entry_xy_value.grid(row=8, column=2, sticky='W')
+
+        self.test_ctn['text'] = '@'
+        self.test_ctn['command'] = self.move_test
+        self.test_ctn['relief'] = 'flat'
+        self.test_ctn.grid(row=8, column=3, sticky='W')
+        self.test_ctn.configure(state='disabled')
 
         self.start_ctn['text'] = 'START'
         self.start_ctn['width'] = 10
@@ -665,14 +824,6 @@ class Application(Frame):
         self.start_ctn['command'] = self.fight_start
         self.start_ctn['relief'] = 'groove'
         self.start_ctn.grid(row=0, column=0, sticky='E')
-
-        self.stop_ctn['text'] = 'STOP'
-        self.stop_ctn['width'] = 10
-        self.stop_ctn['height'] = 2
-        self.stop_ctn['command'] = self.fight_stop
-        self.stop_ctn['relief'] = 'groove'
-        self.stop_ctn.grid(row=0, column=1, sticky='W')
-        self.stop_ctn.configure(state='disabled')
 
         self.info_box['width'] = 40
         self.info_box['height'] = 20

@@ -2,7 +2,6 @@
 
 import sys
 import os
-from ctypes import *
 
 
 def create_app(title, version):
@@ -21,14 +20,9 @@ def create_app(title, version):
         para = False
     if para == 'debug':
         app.setdebug(True)
-    else:
-        whnd = windll.kernel32.GetConsoleWindow()
-        if whnd:
-            windll.user32.ShowWindow(whnd, 0)
-            windll.kernel32.CloseHandle(whnd)
 
     return app
 
 
-myapp = create_app('就你破势多', '20201024')
+myapp = create_app('就你破势多', '20210531')
 myapp.mainloop()
